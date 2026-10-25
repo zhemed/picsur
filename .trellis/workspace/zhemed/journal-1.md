@@ -813,3 +813,28 @@ zh-default 只改前端：picsur-img 增加 native 模式（原生 <img loading=
 ### Status
 
 [OK] **Completed**
+
+
+## Session 36: 工作区残留盘点与清理：归档 2 个任务、清 5 个 worktree 与 23 个已合并分支、补 3 轮 journal
+<!-- trellis-session: v=2 fp=89857eeb2e3102e8 -->
+
+**Date**: 2026-10-25
+**Task**: 工作区残留盘点与清理：归档 2 个任务、清 5 个 worktree 与 23 个已合并分支、补 3 轮 journal
+**Package**: picsur-shared
+**Branch**: `master`
+
+### Summary
+
+用户问「工作区现在还有残留的任务吗」。只读盘点确认 2 个未归档任务：00-bootstrap-guidelines（2026-10-13 init 创建，长期 in_progress，spec 仅 3/31 条目已填）与 10-17-admin-username（模板 PRD、缺 directive，同轮调查已按用户「暂时归档」决定归档，属漏归档重复体；归档副本缺 task.json）。经交互组件授权后清理：① 两个任务都归档（10-17 补回 directive 与调查结论后归档；00-bootstrap 在 PRD 追加 spec 缺口结案说明后归档）；② 删 5 个已合并 worktree（admin-password/blank/blankfix/share-dropdown/spec-ci-rule）、未注册的 .worktrees/hint、12 个已并入 master 的本地分支；③ 删 origin 11 个已合并分支并 prune（只剩 origin/master）；④ 补记 Session 33-35 三轮 journal 并同步 index（日期按 commit UTC 时间校正为 10-16/10-16/10-17）。归档自动提交被全局钩子以「缺任务锚点」拒绝，改为带 [task:...] 锚点手动提交。归档最后一个任务后 Trellis 闸门拦截全部工具调用，按闸门提示新建 10-25-cleanup-closeout 恢复绑定完成收尾提交。保留未合并分支 backup/pre-squash、experiments/rust、pr-115/128/129/130。遗留：spec 28 条 To fill 待另起 spec-fill 任务；.trellis/.runtime 旧 marker 未动。全程未改业务代码。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f9b4396` | chore(task): archive the deferred admin username round [task:10-25-workspace-task-audit] |
+| `26ba9d6` | chore(task): archive the long-stale bootstrap guidelines round [task:10-25-workspace-task-audit] |
+| `59bdc53` | docs(journal): backfill the 0.10.5 / 0.10.6 / admin-username rounds [task:10-25-workspace-task-audit] |
+
+### Status
+
+[OK] **Completed**

@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 35
+- **Total Sessions**: 36
 - **Last Active**: 2026-10-25
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~815 | Active |
+| `journal-1.md` | ~840 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 36 | 2026-10-25 | 工作区残留盘点与清理：归档 2 个任务、清 5 个 worktree 与 23 个已合并分支、补 3 轮 journal | `f9b4396`, `26ba9d6`, `59bdc53` | `master` |
 | 35 | 2026-10-17 | admin 用户名改不了：实测服务端不写 username；按用户决定暂时归档 | `0bcd7de`, `5642421`, `86d7a79` | `master` |
 | 34 | 2026-10-16 | admin 密码无法在 UI 修改：只挡权限、放行密码；发 0.10.6 | `d251bb1`, `0992ba1`, `98c3b30`, `fe4f837` | `master` |
 | 33 | 2026-10-16 | 分享面板下拉：补全 Material 令牌修透明 + 高度上限强制向下；查 tlbb 源码；发 0.10.5 | `d303197`, `a370fd9`, `daa2478`, `3fc5378`, `371585b` | `master` |
