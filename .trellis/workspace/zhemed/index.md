@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 32
-- **Last Active**: 2026-10-16
+- **Total Sessions**: 35
+- **Last Active**: 2026-10-25
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~737 | Active |
+| `journal-1.md` | ~815 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,9 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 35 | 2026-10-17 | admin 用户名改不了：实测服务端不写 username；按用户决定暂时归档 | `0bcd7de`, `5642421`, `86d7a79` | `master` |
+| 34 | 2026-10-16 | admin 密码无法在 UI 修改：只挡权限、放行密码；发 0.10.6 | `d251bb1`, `0992ba1`, `98c3b30`, `fe4f837` | `master` |
+| 33 | 2026-10-16 | 分享面板下拉：补全 Material 令牌修透明 + 高度上限强制向下；查 tlbb 源码；发 0.10.5 | `d303197`, `a370fd9`, `daa2478`, `3fc5378`, `371585b` | `master` |
 | 32 | 2026-10-16 | 图库空白结案：无超时兜底 + 0 值校验坑，发 0.10.4 | `c50802b` | `master` |
 | 31 | 2026-10-16 | 接续中断收尾：确认 spec 提交已合并、CI 绿、清尾巴 | `6257a93` | `master` |
 | 30 | 2026-10-16 | 图库性能：首屏 1.7MB→20KB，请求 24→12 | `6727d6a` | `master` |

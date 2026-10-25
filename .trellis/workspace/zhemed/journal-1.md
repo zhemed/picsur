@@ -735,3 +735,81 @@ zh-default 只改前端：picsur-img 增加 native 模式（原生 <img loading=
 ### Status
 
 [OK] **Completed**
+
+
+## Session 33: 分享面板下拉：补全 Material 令牌修透明 + 高度上限强制向下；查 tlbb 源码；发 0.10.5
+<!-- trellis-session: v=2 fp=96f1ef27c86adfeb -->
+
+**Date**: 2026-10-16
+**Task**: 分享面板下拉：补全 Material 令牌修透明 + 高度上限强制向下；查 tlbb 源码；发 0.10.5
+**Package**: picsur-shared
+**Branch**: `master`
+
+### Summary
+
+用户截图反馈分享面板「图片格式」下拉展开后透明、且向上弹。实测根因：Material 21 select/menu 的 `--mat-*` 令牌从未发出（与已修过的 dialog/table/chip 同类），面板背景落回默认。修：material-theme.scss 补 62 行 select/menu/overlay 令牌（背景/文字/描边/阴影）并给面板设高度上限，常规窗口（1440×900、390×844）实测向下展开、面板 rgb(31,31,31) 不透明、对比度探针 PASS，用户确认「可以看到了」。方向残留：字段贴窗口底部、下方空间不足时 Material 仍会自动翻上且无公开配置可强制；给出三选方案后用户 2026-10-17 决定「就这样，不改了」，该决定任务按临时归档。另查 tlbb.qq.com 是否开放源码：实测 GBK 编码成品落地页、Vue 模板占位符、资源走腾讯 CDN，结论商业闭源无源码，不给逆向路径。发布 0.10.5，popover 放置怪癖已记入 spec。未解：极矮窗口仍可能翻上。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `d303197` | fix(theme): make the format picker opaque and open downwards [task:10-16-share-dropdown] |
+| `a370fd9` | merge: fix/share-dropdown [task:10-16-share-dropdown] |
+| `daa2478` | chore(release): 0.10.5 |
+| `3fc5378` | docs(task): record the tlbb site lookup result |
+| `371585b` | chore(task): archive the dropdown direction decision |
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 34: admin 密码无法在 UI 修改：只挡权限、放行密码；发 0.10.6
+<!-- trellis-session: v=2 fp=22a3b9be364db813 -->
+
+**Date**: 2026-10-16
+**Task**: admin 密码无法在 UI 修改：只挡权限、放行密码；发 0.10.6
+**Package**: picsur-shared
+**Branch**: `master`
+
+### Summary
+
+用户截图反馈「编辑用户 admin」填新密码不生效、提示还是英文。实测：上一轮去角色化把 admin 设为只读时，POST /api/user/update 把整个账号拒了，改密码被连带挡住。修：前端只提交账号能改的字段（admin 不提交 permissions、密码照常提交），拒绝文案改走 i18n 词典；补 support/regression-user-admin.sh（admin 改密码 → 成功；admin 改权限 → 被拒 + 明确消息）；三包构建 + 回归全绿。发布 0.10.6，用户验收成功（并顺势追问用户名为什么也改不了）。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `d251bb1` | chore(task): open the admin password task |
+| `0992ba1` | fix(users): the built-in admin can change its password again [task:10-16-admin-password] |
+| `98c3b30` | merge: fix/admin-password [task:10-16-admin-password] |
+| `fe4f837` | chore(release): 0.10.6 |
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 35: admin 用户名改不了：实测服务端不写 username；按用户决定暂时归档
+<!-- trellis-session: v=2 fp=099180e7813b0970 -->
+
+**Date**: 2026-10-17
+**Task**: admin 用户名改不了：实测服务端不写 username；按用户决定暂时归档
+**Package**: picsur-shared
+**Branch**: `master`
+
+### Summary
+
+用户追问「用户名为什么无法更改」。实测结论：任何用户都无法改名 —— POST /api/user/update 服务实现里没有写 username 的语句（DTO 允许），改名返回 201 但静默不生效（admin → admin2 实测响应与库里都仍是 admin）。admin 还多两道按名字的硬约束：ImmutableUsersList 保护其不被删/降权，SuperUserPermissions 也按名字匹配；改名等于丢内置超管身份（可自锁 + 新权限不再自动授予）。要安全支持改名需一次小重构（按 id/专门标记识别内置超管 + 数据迁移 + 权限判据改造 + 回归）。用户 2026-10-17 决定「算了，暂时归档。以后再说」→ 暂不修，调查结论与两种修法随任务归档；同轮把上一轮遗留的 admin 密码任务一并归档（密码/用户名两轮收口）。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `0bcd7de` | chore(task): open the admin username task |
+| `5642421` | docs(task): archive the admin username investigation |
+| `86d7a79` | chore(task): archive the admin password and username rounds |
+
+### Status
+
+[OK] **Completed**
