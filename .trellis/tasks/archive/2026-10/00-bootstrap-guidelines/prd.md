@@ -131,3 +131,13 @@ spec — a one-time setup so every future AI session follows the team's
 conventions instead of writing generic code. Before we start, do you have
 any existing convention docs (CLAUDE.md, .cursorrules, CONTRIBUTING.md,
 etc.) I can pull from, or should I scan the codebase from scratch?"
+
+---
+
+## 结案说明（2026-10-25，按用户决定归档）
+
+- 本任务自 2026-10-13 `trellis init` 创建后长期停在 `in_progress`，无会话接手推进。
+- 实际进展：`.trellis/spec/` 已建立可用基线 —— `picsur-backend/backend/build-and-deploy.md`（57KB）、`image-api-contracts.md`（14KB）、`picsur-backend/backend/database-guidelines.md`（6KB）、三包 index 与 guides 均已填；其余 layer 页仍为模板（各 index 内共 28 条 "To fill"，3 条 "✅ 已填"）。
+- 结案结论：bootstrap 阶段按「已建立基线」结案；剩余 spec 填充不再挂在本任务上，作为遗留项记录在 `10-25-workspace-task-audit` 的盘点报告里。
+- 后续若继续补 spec：从各 `index.md` 的 "To fill" 行开始，另起任务（建议 slug `spec-fill-<package>-<layer>`），不要重新启用本 bootstrap 任务。
+
