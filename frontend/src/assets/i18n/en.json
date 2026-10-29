@@ -2,13 +2,7 @@
   "app": {
     "logoTextAlt": "Picsur Text Logo",
     "logoIconAlt": "Picsur Icon Logo",
-    "unknownVersion": "Unknown Version",
-    "footer": {
-      "madeWith": "Made with",
-      "by": "by",
-      "demoVersion": "Demo Version",
-      "sourceCode": "Source Code"
-    }
+    "unknownVersion": "Unknown Version"
   },
   "pagination": {
     "itemsPerPage": "Items per page:",

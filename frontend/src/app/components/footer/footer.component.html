@@ -1,24 +1,3 @@
 <footer class="container">
-  <p>
-    <!-- Made into two spans, make sure browsers break at the right point -->
-    <span class="line">
-      {{ 'app.footer.madeWith' | translate }}
-      <span class="material-icons-outlined heart"> favorite_border </span>
-      {{ 'app.footer.by' | translate }}
-      <a class="link-unstyled" href="https://github.com/zhemed" target="_blank">
-        zhemed
-      </a>
-
-      {{ isDemo ? ' - ' + ('app.footer.demoVersion' | translate) : '' }}
-    </span>
-
-    <span class="line">
-      &nbsp;-
-      {{ version }}
-      -
-      <a class="link-unstyled" href="https://github.com/zhemed/picsur">
-        {{ 'app.footer.sourceCode' | translate }}
-      </a>
-    </span>
-  </p>
+  <!-- 来源行已移除；保留 footer 骨架与固定高度，避免主区域位移。高度推导见 footer.component.scss。 -->
 </footer>

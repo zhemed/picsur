@@ -2,13 +2,7 @@
   "app": {
     "logoTextAlt": "Picsur 文字标志",
     "logoIconAlt": "Picsur 图标标志",
-    "unknownVersion": "未知版本",
-    "footer": {
-      "madeWith": "由",
-      "by": "制作",
-      "demoVersion": "演示版本",
-      "sourceCode": "源代码"
-    }
+    "unknownVersion": "未知版本"
   },
   "pagination": {
     "itemsPerPage": "每页条目数：",

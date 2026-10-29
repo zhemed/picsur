@@ -3,6 +3,11 @@ footer {
   flex-direction: column;
   align-items: center;
 
+  /* 来源行清空后不再有内容撑高，写死原内容高度 39px：
+     原 p 高 27px（心形图标撑出的行盒）+ Material mat-typography 给 p 的 12px 下边距。
+     加上原有 margin-top: 1em 的 14px，app-footer 总占位仍是 53px，避免主区域位移。 */
+  height: 39px;
+
   margin-top: 1em;
 
   text-align: center;
