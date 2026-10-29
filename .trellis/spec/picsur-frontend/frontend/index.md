@@ -82,6 +82,11 @@ This directory contains guidelines for frontend development. Fill in each file w
 - [ ] **跨网络/跨重启的流程要有上界与自动收尾**：升级、检查这类流程客户端必须有超时与可重试兜底；
       升级过程中轮询后端状态并显示阶段（拉镜像 / 重启中），版本变化后**自动刷新页面**，
       不要留给用户手动强刷；失败要显示「已回滚到 <version>」+ 原因。
+- [ ] **页脚来源行已移除，靠固定高度占位**（2026-10-29，`10-29-footer-line-blank`）：
+      `footer.component.html` 只剩空骨架，`footer.component.scss` 用 `height: 39px` 加原有 `margin-top: 1em`
+      维持 `app-footer` 总占位 53px，主区域高度不随页脚变化。改页脚、body 字号或 `mat-typography` 相关样式后，
+      要复量 `app-footer` 是否仍为 53px。页脚旧文案词条已从 en/zh 词典删除；
+      需要版本号请读 `/api/info` 或设置页「关于」，不要再往页脚加文案。
 
 ---
 
