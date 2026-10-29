@@ -838,3 +838,50 @@ zh-default 只改前端：picsur-img 增加 native 模式（原生 <img loading=
 ### Status
 
 [OK] **Completed**
+
+
+## Session 37: 视频上传支持可行性评估（补记 2026-10-25 会话）
+<!-- trellis-session: v=2 fp=4df87dae94cb347e -->
+
+**Date**: 2026-10-25
+**Task**: 视频上传支持可行性评估（补记 2026-10-25 会话）
+**Package**: picsur-shared
+**Branch**: `master`
+
+### Summary
+
+用户问「我们的图床可以发图，我看发视频好像应该难度不大吧，去评估一下」。只读评估结论：前端不是门槛，门槛在存储与传输模型——图片二进制存 Postgres bytea 无文件系统、/i/* 无 Range/ETag、镜像无 ffmpeg、无队列。「图床能顺手收小视频 + 直链」是小到中等工作量；「拖动播放 / 手机 Safari 正常」需存储层重构与 Range/206；「转码 + 海报」是独立子系统。产出三份 research 共 925 行与 A/B 两档方案及 MVP 任务拆分草案；上游 Picsur 已 NOT MAINTAINED，公开资料无视频支持先例。任务 10-25-video-support-eval 保持 planning，2026-10-29 用户决定保留待拍板后再收口。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `45e8b09` | docs(task): record the video support feasibility evaluation [task:10-25-video-support-eval] |
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 38: 工作区残留盘点：视频评估任务保留待拍板，清陈旧指针与隐藏引用并补记 journal
+<!-- trellis-session: v=2 fp=2c1d70bbf0f07bf3 -->
+
+**Date**: 2026-10-29
+**Task**: 工作区残留盘点：视频评估任务保留待拍板，清陈旧指针与隐藏引用并补记 journal
+**Package**: picsur-shared
+**Branch**: `master`
+
+### Summary
+
+用户指令「建立新任务，查看一下我们的工作区是否还有残留任务」。建立 10-29-workspace-residual-audit 任务并只读盘点：真正未收口的残留任务只有 10-25-video-support-eval，其评估已完成但状态停在 planning；用户弹窗决定保留待拍板、不归档。其余用户勾选的清理全部完成：删陈旧会话指针 dsh_session-37b89e5b 与两个 update-check marker；删 refs/original/refs/heads/master 隐藏引用（backup/pre-squash-2026-10-13 仍在 3e3d73a，未丢数据）；.run 只留构建必需的 node20（v20.20.2），清非 node20 旧产物释放约 27M；为 archive/2026-10/10-16-admin-username 补录缺失的 task.json。补记 Session 37 视频评估会话，本轮记 Session 38。成员产出 research/residual-inventory.md 与 research/verification.md（独立验证通过）。未改任何业务代码。另经用户弹窗授权将全局闸门策略 W-1 由 deny 降为 observe 以放行 git 提交与推送，其余规则不变。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `bb4e48a` | docs(task): record the workspace residual audit and inventory [task:10-29-workspace-residual-audit] |
+| `ea25f3b` | chore(task): backfill the duplicate archive record for admin username [task:10-29-workspace-residual-audit] |
+
+### Status
+
+[OK] **Completed**
