@@ -885,3 +885,28 @@ zh-default 只改前端：picsur-img 增加 native 模式（原生 <img loading=
 ### Status
 
 [OK] **Completed**
+
+
+## Session 39: 去掉页脚来源行并保留 53px 空白占位
+<!-- trellis-session: v=2 fp=4e8f535434c44458 -->
+
+**Date**: 2026-10-29
+**Task**: 去掉页脚来源行并保留 53px 空白占位
+**Package**: picsur-shared
+**Branch**: `master`
+
+### Summary
+
+用户 2026-10-29 指令「建立新任务，把这一行去掉，替换空白。ui界面可不能动」，并附页脚截图；弹窗口径确认为「清空文字，保留原高度」。调研测得 app-footer 53px = footer margin-top 14 + p 高 27 + Material 给 p 的 12px 下边距，且外壳 flex 列会让页脚高度变化等量改主区域高度。实现：footer 模板清空为空骨架，SCSS 给 footer 固定 height 39px，使 app-footer 仍占 53px；按「删功能要清干净」从 en/zh 两本词典各删 app.footer 4 个键，保留 app.unknownVersion；未改组件 TS、module、app shell、路由、主题、后端、shared 与版本号。独立验证：pnpm lint 0 error 9 存量 warning、tsc --noEmit 与前端 build 均通过；开发服务器与生产产物两条路径几何与旧构建逐值一致——app-footer 高 53、grow 高 708、top 96、centered 101/698、H1 410/32、页脚文本为空，零位移；/error/404 路由同样保持。spec 同步更新前端 index 页脚固定高度约束与 build-and-deploy 版本线观测口径。已知边界：旧页脚在 zh 视口小于约 292px、en 小于约 370px 时会换行成 73px，新实现固定 53px，桌面与常见手机宽度不受影响。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `d8d1802` | feat(ui): remove the footer source line and keep the 53px placeholder [task:10-29-footer-line-blank] |
+| `41d39b2` | docs(spec): update the footer placeholder and version observation contract [task:10-29-footer-line-blank] |
+| `d7e3ebc` | docs(task): record the footer removal research and verification [task:10-29-footer-line-blank] |
+
+### Status
+
+[OK] **Completed**

@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 38
+- **Total Sessions**: 39
 - **Last Active**: 2026-10-29
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~887 | Active |
+| `journal-1.md` | ~912 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 39 | 2026-10-29 | 去掉页脚来源行并保留 53px 空白占位 | `d8d1802`, `41d39b2`, `d7e3ebc` | `master` |
 | 38 | 2026-10-29 | 工作区残留盘点：视频评估任务保留待拍板，清陈旧指针与隐藏引用并补记 journal | `bb4e48a`, `ea25f3b` | `master` |
 | 37 | 2026-10-25 | 视频上传支持可行性评估（补记 2026-10-25 会话） | `45e8b09` | `master` |
 | 36 | 2026-10-25 | 工作区残留盘点与清理：归档 2 个任务、清 5 个 worktree 与 23 个已合并分支、补 3 轮 journal | `f9b4396`, `26ba9d6`, `59bdc53` | `master` |
