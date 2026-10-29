@@ -208,6 +208,22 @@ docker exec picsur-<stream> ls /picsur/frontend/dist   # 判据：有文件才�
 > `cards=0`、查不到 `picsur-img` 元素、或探针报空页面 —— **先 `ls` 容器里那个目录**，
 > 不要去怀疑前端代码。2026-10-16 图库宽高任务就是这样误报过一次 `cards=0`。
 
+### 6.2 升级本机 all-in-one 实例：`-prev-` 容器不能当回滚窗口（2026-10-29 实测）
+
+手动升级常写成 `docker stop picsur && docker rename picsur picsur-prev-0106 && docker run ... 新镜像`，
+但 0.10.7 升级实测：新实例启动约 2 秒后，应用自己的 `SelfUpdateService.cleanupLeftovers()`
+会把同 lineage 下处于停止状态的 `<base>-prev-*` 容器删除，日志是
+`Removed leftover container picsur-prev-0106 (interrupted update)`。
+也就是说**手动 rename 的回滚窗口只有几秒**，长验收会以为旧容器还在、其实已经没了。
+
+正确做法：
+
+- 升级前先做数据安全网 `docker exec picsur pg_dump -U picsur -d picsur > /tmp/picsur-pre-<版本>.sql`，
+  并记录旧镜像 ID、`HostConfig` 的端口/挂载/重启策略/Env 与是否挂 `docker.sock`；
+- 升级后回滚别依赖 `-prev-` 容器，走「从 ghcr 仍在的 `:<旧版本>` 常规镜像 + `Dockerfile.allinone` 重建
+  `:allinone`」的路径，或改用面板自升级让应用自己处理回滚；
+- 旧 allinone 镜像可能在重打标签后变成无标签镜像被回收，升级前就 `docker image inspect` 确认它还在。
+
 ---
 
 ## 7. Wrong vs Correct
@@ -316,6 +332,12 @@ pkill -x node # 或先 pgrep 拿 PID 再 kill <pid>
      ```
    - 症状特征：容器里 `vips -l | grep jxlsave` **有**（CLI 用的是自编译 libvips），但 sharp 进程里没有
      —— 两个进程用的是不同的 libvips。
+
+6. **Alpine apk pin 会随上游 `-rN` 漂移**（2026-10-29 发布 0.10.7 实测）：`expat` 2.8.5→2.9.0、
+   `imagemagick` 7.1.2.29→7.1.2.34、`python3` 3.12.15→3.12.16，旧版本从软件源下架后
+   `apk add pkg=旧版本` 直接失败、`docker build` 秒级红。处置：跑 `bash support/apk-versions.sh`
+   重新解析四个阶段的应锁版本，只改版本号同步进 `Dockerfile` 对应 stage，**不要加宽范围**；
+   本次 5 处一次改完，提交 `08286b9`，修完 dry-run 构建 232 秒通过。
 
 ### 8.4 残留风险（本任务明确未覆盖，别当成已解决）
 
