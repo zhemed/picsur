@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/picsur-backend/backend/build-and-deploy.md", "reason": "核对发布、回归与实例升级是否满足 spec 契约"}
+{"file": ".trellis/tasks/10-29-release-footer-0.10.7/research/release-runbook.md", "reason": "按 runbook 核对发布命令与验证结果"}
