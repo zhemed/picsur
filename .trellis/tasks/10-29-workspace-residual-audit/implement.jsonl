@@ -1,0 +1,4 @@
+{"file": ".trellis/workflow.md", "reason": "任务生命周期、planning/start/archive 语义与 Phase 3 收口要求，用于判定残留任务分类与处置建议"}
+{"file": ".trellis/tasks/archive/2026-10/10-25-workspace-task-audit/prd.md", "reason": "上一轮同类盘点任务的判据、清理口径与遗留项，保持本轮结论可比"}
+{"file": "AGENTS.md", "reason": "仓库提交锚点、push 约定与工作区规则，判定残留与处置时必须遵守"}
+{"file": ".trellis/workspace/zhemed/journal-1.md", "reason": "历史会话留痕，用于核对 journal 与任务目录的缺口"}
