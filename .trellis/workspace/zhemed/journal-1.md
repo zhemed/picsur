@@ -910,3 +910,31 @@ zh-default 只改前端：picsur-img 增加 native 模式（原生 <img loading=
 ### Status
 
 [OK] **Completed**
+
+
+## Session 40: 发版 0.10.7：清依赖阻断、修 apk pin、发布镜像与 tag、升级本机实例
+<!-- trellis-session: v=2 fp=4c9fb62833599196 -->
+
+**Date**: 2026-10-29
+**Task**: 发版 0.10.7：清依赖阻断、修 apk pin、发布镜像与 tag、升级本机实例
+**Package**: picsur-shared
+**Branch**: `master`
+
+### Summary
+
+用户 2026-10-29「确认授权，发版吧」，口径为 0.10.7 补丁版、发布并回归并升级本机实例。首次 Phase A 被依赖审计阻断：后端/共享 15 条新 advisory、CI 自 10-25 起红；按用户选择先修依赖，子任务 10-29-dep-security-v4 完成 zod v3→v4 迁移与 fastify/fast-uri/undici/body-parser 补丁升级，提交 2a8f38c，audit 后端/共享 15→0，CI run 40881034838 success；子任务已归档。随后版本号升 0.10.7 提交 b09f327，CI 绿。dry-run 首次因 Alpine apk pin 漂移失败：expat 2.8.5→2.9.0、imagemagick 7.1.2.29→7.1.2.34、python3 3.12.15→3.12.16 旧版本下架；按 support/apk-versions.sh 同步 Dockerfile 5 处 pin 后提交 08286b9，dry-run 232 秒通过。18080 隔离栈断言 version 0.10.7、production true、migrations 12，38 项回归 38 passed 0 failed，页脚空白 53。release-local.sh 43 秒推送 0.10.7/v0.10.7/0.10/latest digest sha256:ecd41501fc35… 与 allinone digest sha256:3c6bcf7fc981…，自动打推 annotated tag v0.10.7，peel 指向 b0e50d2；v0.10.6 与旧镜像保留。本机 8080 实例先 pg_dump 备份再按原 HostConfig 重建升级到 0.10.7：版本 0.10.7、容器 healthy、镜像 digest 匹配、图片总数 1 与迁移 12 不变、页脚空白 53、关于页显示 0.10.7；旧 -prev- 容器被应用自升级清理逻辑自动删除，回滚改为从 v0.10.6 常规镜像重建，已写入 spec §6.2。独立终验通过，无打回项。spec 同步 §8.1 zod v4、§8.2 overrides、§8.3 apk pin 漂移、§8.4 残留风险、§9 发布机制、§6.2 升级回滚。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2a8f38c` | fix(deps): clear backend/shared advisories and migrate zod v4 [task:10-29-dep-security-v4] |
+| `b09f327` | chore(release): 0.10.7 |
+| `08286b9` | fix(build): refresh the Alpine apk pins for the 0.10.7 image |
+| `b0e50d2` | docs(task): record the Phase B1 dry-run build and 38-item regression |
+| `b904e63` | docs(spec): record apk pin drift and instance upgrade rollback lessons [task:10-29-release-footer-0.10.7] |
+| `36a907e` | docs(task): record the 0.10.7 release and instance upgrade verification [task:10-29-release-footer-0.10.7] |
+
+### Status
+
+[OK] **Completed**
