@@ -32,7 +32,13 @@ export const ImageMetaResponseSchema = z.object({
   user: EUserSchema,
   fileTypes: z.object({
     [ImageEntryVariant.MASTER]: z.string(),
-    [ImageEntryVariant.ORIGINAL]: z.union([z.string(), z.undefined()]),
+    /**
+     * Absent when the uploaded original was not kept (`keep_original` is off
+     * by default), and JSON drops the `undefined` value even when the backend
+     * sets the key, so it is optional on the wire. Zod 4 rejects a missing key
+     * for a schema that merely accepts `undefined`.
+     */
+    [ImageEntryVariant.ORIGINAL]: z.string().optional(),
   }),
 });
 export class ImageMetaResponse extends createZodDto(ImageMetaResponseSchema) {}

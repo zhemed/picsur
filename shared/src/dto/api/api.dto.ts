@@ -6,7 +6,7 @@ const ApiResponseBase = z.object({
   timeMs: z.number().min(0).int(),
 });
 
-const ApiSuccessResponse = <T extends z.AnyZodObject>(data: T) =>
+const ApiSuccessResponse = <T extends z.ZodObject>(data: T) =>
   ApiResponseBase.merge(
     z.object({
       success: z.literal(true),
@@ -24,10 +24,35 @@ const ApiErrorResponseSchema = ApiResponseBase.merge(
   }),
 );
 
-export const ApiResponseSchema = <T extends z.AnyZodObject>(data: T) =>
-  ApiErrorResponseSchema.or(ApiSuccessResponse(data));
-
 export type ApiErrorResponse = z.infer<typeof ApiErrorResponseSchema>;
+
+/**
+ * Wire shape of a successful envelope.
+ *
+ * Zod 4 cannot infer a resolvable object type for a schema that embeds a
+ * generic schema (`.merge()` with a generic `data` yields an unresolved mapped
+ * type), which breaks `success === false` narrowing on the client. The runtime
+ * schema below is unchanged; only its static type is pinned to this explicit
+ * envelope so the union stays discriminated.
+ */
+export type ApiSuccessEnvelope<T> = Omit<
+  ApiErrorResponse,
+  'success' | 'data'
+> & {
+  success: true;
+  data: T;
+};
+
+export type ApiResponseEnvelope<T> =
+  | ApiErrorResponse
+  | ApiSuccessEnvelope<T>;
+
+export const ApiResponseSchema = <T extends z.ZodObject>(
+  data: T,
+): z.ZodType<ApiResponseEnvelope<z.infer<T>>> =>
+  ApiErrorResponseSchema.or(
+    ApiSuccessResponse(data),
+  ) as unknown as z.ZodType<ApiResponseEnvelope<z.infer<T>>>;
 
 const _ApiAnySuccessResponseSchema = ApiSuccessResponse(z.object({}))
   .omit({ data: true })

@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/picsur-backend/backend/build-and-deploy.md", "reason": "核对依赖审计、构建与 CI 口径是否满足发布前置要求"}
+{"file": ".trellis/tasks/10-29-release-footer-0.10.7/research/phase-a-preflight.md", "reason": "按 15 条 advisory 清单逐项核对是否清零"}

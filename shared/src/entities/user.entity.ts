@@ -20,6 +20,13 @@ export const EUserSchema = z.object({
    * added at check time and are not necessarily part of this list.
    */
   permissions: IsStringList(),
-  hashedPassword: z.undefined(),
+  /**
+   * Never serialised: the property must be absent (or `undefined`) on API
+   * objects. Zod 4 requires the key to be present when the schema itself
+   * accepts `undefined`, and JSON drops `undefined` values, so this has to be
+   * explicitly optional or every response carrying a user would fail its own
+   * response validation.
+   */
+  hashedPassword: z.undefined().optional(),
 });
 export type EUser = z.infer<typeof EUserSchema>;

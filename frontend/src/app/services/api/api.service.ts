@@ -95,7 +95,7 @@ export class ApiService {
     @Inject(WINDOW) private readonly windowRef: Window,
   ) {}
 
-  public get<T extends z.AnyZodObject>(
+  public get<T extends z.ZodObject>(
     type: ZodDtoStatic<T>,
     url: string,
   ): RunningRequest<z.infer<T>> {
@@ -110,7 +110,7 @@ export class ApiService {
     return this.fetchBuffer(url, { method: 'GET' });
   }
 
-  public post<T extends z.AnyZodObject, W extends z.AnyZodObject>(
+  public post<T extends z.ZodObject, W extends z.ZodObject>(
     sendType: ZodDtoStatic<T>,
     receiveType: ZodDtoStatic<W>,
     url: string,
@@ -131,14 +131,14 @@ export class ApiService {
     });
   }
 
-  public postEmpty<T extends z.AnyZodObject>(
+  public postEmpty<T extends z.ZodObject>(
     type: ZodDtoStatic<T>,
     url: string,
   ): RunningRequest<z.infer<T>> {
     return this.fetchSafeJson(type, url, { method: 'POST' });
   }
 
-  public postForm<T extends z.AnyZodObject>(
+  public postForm<T extends z.ZodObject>(
     receiveType: ZodDtoStatic<T>,
     url: string,
     data: MultiPartRequest,
@@ -149,12 +149,12 @@ export class ApiService {
     });
   }
 
-  private fetchSafeJson<T extends z.AnyZodObject>(
+  private fetchSafeJson<T extends z.ZodObject>(
     type: ZodDtoStatic<T>,
     url: string,
     options: AxiosRequestConfig,
   ): RunningRequest<z.infer<T>> {
-    const resultSchema = ApiResponseSchema(type.zodSchema as z.AnyZodObject);
+    const resultSchema = ApiResponseSchema(type.zodSchema);
     type resultType = z.infer<typeof resultSchema>;
 
     const response = this.fetch(url, {

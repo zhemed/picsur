@@ -12,9 +12,7 @@ export const IsValidMS = (min = 0) =>
     },
     z
       .number({
-        errorMap: () => ({
-          message: 'Invalid duration value',
-        }),
+        error: 'Invalid duration value',
       })
       .int()
       .min(min),

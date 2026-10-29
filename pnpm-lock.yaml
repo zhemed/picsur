@@ -7,7 +7,10 @@ settings:
 overrides:
   typescript: ~5.9.3
   node-gyp: ^11.4.2
-  fast-uri: ^3.1.8
+  fast-uri: ^3.1.9
+  fastify@>=5.0.0 <5.12.6: ^5.12.6
+  undici: ^7.30.1
+  body-parser@>=2.0.0 <2.4.0: ^2.4.0
   jsonwebtoken: ^9.0.3
   lodash: ^4.18.1
   brace-expansion@>=2.0.0 <2.1.2: ^2.1.2
@@ -90,7 +93,7 @@ importers:
         version: 12.0.2(@nestjs/common@12.1.3(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@12.1.3(@nestjs/common@12.1.3(reflect-metadata@0.2.2)(rxjs@7.8.1))(reflect-metadata@0.2.2)(rxjs@7.8.1))
       '@nestjs/serve-static':
         specifier: ^12.0.0
-        version: 12.0.0(@fastify/static@10.1.6)(@nestjs/common@12.1.3(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@12.1.3(@nestjs/common@12.1.3(reflect-metadata@0.2.2)(rxjs@7.8.1))(reflect-metadata@0.2.2)(rxjs@7.8.1))(express@5.3.0)(fastify@5.12.5)
+        version: 12.0.0(@fastify/static@10.1.6)(@nestjs/common@12.1.3(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@12.1.3(@nestjs/common@12.1.3(reflect-metadata@0.2.2)(rxjs@7.8.1))(reflect-metadata@0.2.2)(rxjs@7.8.1))(express@5.3.0)(fastify@5.12.7)
       '@nestjs/throttler':
         specifier: ^6.7.1
         version: 6.7.1(@nestjs/common@12.1.3(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@12.1.3(@nestjs/common@12.1.3(reflect-metadata@0.2.2)(rxjs@7.8.1))(reflect-metadata@0.2.2)(rxjs@7.8.1))(reflect-metadata@0.2.2)
@@ -110,8 +113,8 @@ importers:
         specifier: 3.4.17
         version: 3.4.17
       fastify:
-        specifier: ^5.12.5
-        version: 5.12.5
+        specifier: ^5.12.6
+        version: 5.12.7
       file-type:
         specifier: ^21.3.4
         version: 21.3.4
@@ -185,8 +188,8 @@ importers:
         specifier: ^0.3.31
         version: 0.3.31(pg@8.13.1)(ts-node@10.9.2(@types/node@22.8.4)(typescript@5.9.3))
       zod:
-        specifier: ^3.23.8
-        version: 3.25.76
+        specifier: ^4.6.7
+        version: 4.6.7
     devDependencies:
       '@nestjs/cli':
         specifier: ^12.0.8
@@ -333,8 +336,8 @@ importers:
         specifier: ^14.0.3
         version: 14.0.3
       zod:
-        specifier: ^3.25.76
-        version: 3.25.76
+        specifier: ^4.6.7
+        version: 4.6.7
       zone.js:
         specifier: ~0.16.3
         version: 0.16.3
@@ -394,8 +397,8 @@ importers:
         specifier: 2.1.3
         version: 2.1.3
       zod:
-        specifier: ^3.23.8
-        version: 3.25.76
+        specifier: ^4.6.7
+        version: 4.6.7
     devDependencies:
       '@types/ms':
         specifier: ^0.7.34
@@ -2487,7 +2490,7 @@ packages:
       '@nestjs/common': ^12.0.0
       '@nestjs/core': ^12.0.0
       express: ^5.0.1
-      fastify: ^5.2.1
+      fastify: ^5.12.6
     peerDependenciesMeta:
       '@fastify/static':
         optional: true
@@ -3641,8 +3644,8 @@ packages:
     resolution: {integrity: sha512-JNcyFQ64OiijEkPzUBTCe+hyPXUD/3LEldGQ6iF5LR1w00mx9o7xtDWHXBY2iItjdCFGoilOLNQbH943ut7pHA==}
     engines: {node: '>= 0.8', npm: 1.2.8000 || >= 1.4.16}
 
-  body-parser@2.3.0:
-    resolution: {integrity: sha512-2cGmJupaNgg+QUwVLAucDuWuoMZ6EX9iHDRswZ5lsNYEmwPaRknMPCLZz07yTzVq/83p4o/wzbDZbBrTvGGTIw==}
+  body-parser@2.4.0:
+    resolution: {integrity: sha512-Ifk1KcLrxaGt1occQagQNFNNOqRt1LFuehEnHHzB8Z6cRgIxRU1TBaiIsUiCdA+gy5PL7Y1IX31DNKkRmxtXjQ==}
     engines: {node: '>=18'}
 
   bonjour-service@1.2.1:
@@ -4427,8 +4430,8 @@ packages:
   fast-string-width@3.0.2:
     resolution: {integrity: sha512-gX8LrtNEI5hq8DVUfRQMbr5lpaS4nMIWV+7XEbXk2b8kiQIizgnlr12B4dA3ZEx3308ze0O4Q1R+cHts8kyUJg==}
 
-  fast-uri@3.1.8:
-    resolution: {integrity: sha512-GZMtZUTNRpOVIECoXwLNZS5xUGE+mVNbTB8h/7Rwh2TFWcBQiPzTgyZi05BF9UMZKkLJv8XBRJTlU7zg8+ZfMg==}
+  fast-uri@3.1.9:
+    resolution: {integrity: sha512-hS/0Wt3Ya043oKXs0sIxrMpKQITXhMLIrVAKKXi4gozGC9v7YRWVnXIZzjNPTO02M9BdxLCWqK1yRXgNziVyJQ==}
 
   fast-wrap-ansi@0.2.2:
     resolution: {integrity: sha512-7F2Fl+TjRSenLqlU3UjSH0iyqopqoZIu7eZVpEirP2g1GtWa2G/ecEmBdgz31+Mxr+ELclgg6sokpSFIQiZ02Q==}
@@ -4436,8 +4439,8 @@ packages:
   fastify-plugin@6.0.1:
     resolution: {integrity: sha512-4wW4RxSmvPXLrh5mgQEiu43qU3bw44N2ss4FTkTkQIbprUhE+/s43QX0j/ttcztdWK7PEkHqVthdc5GdEGDvjA==}
 
-  fastify@5.12.5:
-    resolution: {integrity: sha512-OB2k1dlxs5/NAABqeKV2FUHkSD2BbENsCak8yULVcymn3fHIPDVa9TI3SDnJSWYSllZmSYuZXy2gTnsT+Sut1A==}
+  fastify@5.12.7:
+    resolution: {integrity: sha512-v4pEPsTRPuqlDIYiQFB+BHjVN4SdHX9u0ABk0ZDUKbbdY1vsNryUd1j4Z+jQEZajvYIVk047Kimva9/AJ79GYw==}
 
   fastq@1.17.1:
     resolution: {integrity: sha512-sRVD3lWVIXWg6By68ZN7vho9a1pQcN/WBFaAAsDDFzlJjvoGx0P8z7V1t72grFJfJhu3YPZBuu25f7Kaw2jN1w==}
@@ -5083,9 +5086,6 @@ packages:
     peerDependenciesMeta:
       webpack:
         optional: true
-
-  light-my-request@6.1.0:
-    resolution: {integrity: sha512-+NFuhlOGoEwxeQfJ/pobkVFxcnKyDtiX847hLjuB/IzBxIl3q4VJeFI8uRCgb3AlTWL1lgOr+u5+8QdUcr33ng==}
 
   light-my-request@6.6.0:
     resolution: {integrity: sha512-CHYbu8RtboSIoVsHZ6Ye4cj4Aw/yg2oAFimlF7mNvfDV192LR7nDiKtSIfCuLT7KokPSTn/9kfVLm5OGN0A28A==}
@@ -6740,12 +6740,8 @@ packages:
   undici-types@6.21.0:
     resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
 
-  undici@7.29.1:
-    resolution: {integrity: sha512-RYONW2MeafgYlkVOKYKkA/Ag7BmXqgIWCa8t1m0JcxrQg9pI9lEqRhAOruOBCbAohOa/gkCF+iPi9hrgvTzu6Q==}
-    engines: {node: '>=20.18.1'}
-
-  undici@7.30.0:
-    resolution: {integrity: sha512-dkrQXeHSaoamnItlYbmzG0wFYrM0ZwDxCIg0A7aKjTyyhh9svRzCNFEzV+Vm05/yehjCzjDZ31KXfGEjYSztDQ==}
+  undici@7.30.1:
+    resolution: {integrity: sha512-03KrMbjIFDWQR5RNPrSw3bd1r12JpyFQl9/yxjUbJtqkjmllqC5lFjZh6ujeuJCKr8EOQvRW872Oy/az+nLYxg==}
     engines: {node: '>=20.18.1'}
 
   unicode-canonical-property-names-ecmascript@2.0.1:
@@ -7138,11 +7134,11 @@ packages:
     peerDependencies:
       zod: ^3.25.28 || ^4
 
-  zod@3.25.76:
-    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
-
   zod@4.6.6:
     resolution: {integrity: sha512-4UmzQUF5fxvfcYHlbjBmejU+w+hbDnWFx4aS8kBx7nPBHcO2SqPbpAG8snbdg+Xse4pRefR98hgjFgIMCI/UhA==}
+
+  zod@4.6.7:
+    resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
 
   zone.js@0.16.3:
     resolution: {integrity: sha512-ihXL9+vhYyEhXz4TDNpHeAOZN9FVrbog0Il64OIEI28UP/n5AaI6gsccRuOHBfx+206agzyoK527bYIO0Foy6A==}
@@ -7530,7 +7526,7 @@ snapshots:
       tinyglobby: 0.2.15
       tslib: 2.8.1
       typescript: 5.9.3
-      undici: 7.29.1
+      undici: 7.30.1
       vite: 7.3.6(@types/node@22.20.5)(jiti@2.7.0)(less@4.9.0)(sass@1.97.3)(terser@5.46.0)
       watchpack: 2.5.1
     optionalDependencies:
@@ -8500,7 +8496,7 @@ snapshots:
     dependencies:
       ajv: 8.20.0
       ajv-formats: 3.0.1(ajv@8.20.0)
-      fast-uri: 3.1.8
+      fast-uri: 3.1.9
 
   '@fastify/busboy@3.2.3': {}
 
@@ -8562,7 +8558,7 @@ snapshots:
       fast-querystring: 1.1.2
       fastify-plugin: 6.0.1
       toad-cache: 3.7.0
-      undici: 7.30.0
+      undici: 7.30.1
 
   '@fastify/send@4.1.2':
     dependencies:
@@ -9379,7 +9375,7 @@ snapshots:
       '@nestjs/common': 12.1.3(reflect-metadata@0.2.2)(rxjs@7.8.1)
       '@nestjs/core': 12.1.3(@nestjs/common@12.1.3(reflect-metadata@0.2.2)(rxjs@7.8.1))(reflect-metadata@0.2.2)(rxjs@7.8.1)
       fast-querystring: 1.1.2
-      fastify: 5.12.5
+      fastify: 5.12.7
       find-my-way: 9.9.0
       light-my-request: 6.6.0
       path-to-regexp: 8.4.2
@@ -9407,7 +9403,7 @@ snapshots:
     transitivePeerDependencies:
       - chokidar
 
-  '@nestjs/serve-static@12.0.0(@fastify/static@10.1.6)(@nestjs/common@12.1.3(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@12.1.3(@nestjs/common@12.1.3(reflect-metadata@0.2.2)(rxjs@7.8.1))(reflect-metadata@0.2.2)(rxjs@7.8.1))(express@5.3.0)(fastify@5.12.5)':
+  '@nestjs/serve-static@12.0.0(@fastify/static@10.1.6)(@nestjs/common@12.1.3(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@12.1.3(@nestjs/common@12.1.3(reflect-metadata@0.2.2)(rxjs@7.8.1))(reflect-metadata@0.2.2)(rxjs@7.8.1))(express@5.3.0)(fastify@5.12.7)':
     dependencies:
       '@nestjs/common': 12.1.3(reflect-metadata@0.2.2)(rxjs@7.8.1)
       '@nestjs/core': 12.1.3(@nestjs/common@12.1.3(reflect-metadata@0.2.2)(rxjs@7.8.1))(reflect-metadata@0.2.2)(rxjs@7.8.1)
@@ -9415,7 +9411,7 @@ snapshots:
     optionalDependencies:
       '@fastify/static': 10.1.6
       express: 5.3.0
-      fastify: 5.12.5
+      fastify: 5.12.7
 
   '@nestjs/testing@12.1.3(@nestjs/common@12.1.3(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@12.1.3(@nestjs/common@12.1.3(reflect-metadata@0.2.2)(rxjs@7.8.1))(reflect-metadata@0.2.2)(rxjs@7.8.1))':
     dependencies:
@@ -10436,14 +10432,14 @@ snapshots:
   ajv@8.18.0:
     dependencies:
       fast-deep-equal: 3.1.3
-      fast-uri: 3.1.8
+      fast-uri: 3.1.9
       json-schema-traverse: 1.0.0
       require-from-string: 2.0.2
 
   ajv@8.20.0:
     dependencies:
       fast-deep-equal: 3.1.3
-      fast-uri: 3.1.8
+      fast-uri: 3.1.9
       json-schema-traverse: 1.0.0
       require-from-string: 2.0.2
 
@@ -10640,7 +10636,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  body-parser@2.3.0:
+  body-parser@2.4.0:
     dependencies:
       bytes: 3.1.2
       content-type: 2.1.0
@@ -11406,7 +11402,7 @@ snapshots:
   express@5.3.0:
     dependencies:
       accepts: 2.0.0
-      body-parser: 2.3.0
+      body-parser: 2.4.0
       content-disposition: 2.0.1
       content-type: 2.1.0
       cookie: 0.7.2
@@ -11459,7 +11455,7 @@ snapshots:
       '@fastify/merge-json-schemas': 0.2.2
       ajv: 8.20.0
       ajv-formats: 3.0.1(ajv@8.20.0)
-      fast-uri: 3.1.8
+      fast-uri: 3.1.9
       json-schema-ref-resolver: 3.0.1
       rfdc: 1.4.1
 
@@ -11477,7 +11473,7 @@ snapshots:
     dependencies:
       fast-string-truncated-width: 3.0.3
 
-  fast-uri@3.1.8: {}
+  fast-uri@3.1.9: {}
 
   fast-wrap-ansi@0.2.2:
     dependencies:
@@ -11485,7 +11481,7 @@ snapshots:
 
   fastify-plugin@6.0.1: {}
 
-  fastify@5.12.5:
+  fastify@5.12.7:
     dependencies:
       '@fastify/ajv-compiler': 4.0.7
       '@fastify/error': 4.2.1
@@ -11495,12 +11491,12 @@ snapshots:
       avvio: 9.3.1
       fast-json-stringify: 7.1.0
       find-my-way: 9.10.0
-      light-my-request: 6.1.0
+      light-my-request: 6.6.0
       pino: 10.4.0
       process-warning: 5.1.1
       rfdc: 1.4.1
       secure-json-parse: 4.1.1
-      semver: 7.6.3
+      semver: 7.8.5
       toad-cache: 3.7.0
 
   fastq@1.17.1:
@@ -12169,12 +12165,6 @@ snapshots:
       webpack-sources: 3.6.0
     optionalDependencies:
       webpack: 5.105.2(esbuild@0.28.1)(postcss@8.5.23)
-
-  light-my-request@6.1.0:
-    dependencies:
-      cookie: 0.7.2
-      process-warning: 4.0.0
-      set-cookie-parser: 2.7.1
 
   light-my-request@6.6.0:
     dependencies:
@@ -13962,9 +13952,7 @@ snapshots:
 
   undici-types@6.21.0: {}
 
-  undici@7.29.1: {}
-
-  undici@7.30.0: {}
+  undici@7.30.1: {}
 
   unicode-canonical-property-names-ecmascript@2.0.1: {}
 
@@ -14410,8 +14398,8 @@ snapshots:
     dependencies:
       zod: 4.6.6
 
-  zod@3.25.76: {}
-
   zod@4.6.6: {}
+
+  zod@4.6.7: {}
 
   zone.js@0.16.3: {}
