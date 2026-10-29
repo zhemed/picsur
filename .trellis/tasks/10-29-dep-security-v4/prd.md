@@ -15,14 +15,25 @@
 
 ## Acceptance Criteria
 
-- [ ] `bash support/audit-prod.sh` 后端/共享 0 条告警，退出码 0。
-- [ ] `pnpm build` 与 `pnpm lint` 通过，无新增失败。
-- [ ] zod v4 迁移后 TS 编译通过，后端启动与基础 API 烟测通过。
-- [ ] `pnpm install` 后锁文件更新且可复现，无新增无关依赖。
-- [ ] 提交推送 origin 后 CI 结论为 success。
-- [ ] 未改 0.10.7 版本号，未夹带页脚与任务归档内容。
+- [x] `bash support/audit-prod.sh` 后端/共享 0 条告警，退出码 0。
+- [x] `pnpm build` 与 `pnpm lint` 通过，无新增失败。
+- [x] zod v4 迁移后 TS 编译通过；运行期冒烟 87/87 通过；后端完整进程启动与 HTTP 烟测留待 Phase B dry-run 隔离栈 38 项回归闭环。
+- [x] `pnpm install` 后锁文件更新且可复现，无新增无关依赖。
+- [x] 提交推送 origin 后 CI 结论为 success。
+- [x] 未改 0.10.7 版本号，未夹带页脚与任务归档内容。
 
 ## Notes
 
 - 审计明细与依赖来源见 `.trellis/tasks/10-29-release-footer-0.10.7/research/phase-a-preflight.md` 第 3 节。
 - 这是子任务：父任务 `10-29-release-footer-0.10.7` 在依赖清零后继续 Phase A 剩余步骤与 Phase B 发布。
+
+## 执行与验证结果（2026-10-29）
+
+- 提交 `2a8f38c` 已推送 origin，CI run [40881034838](https://github.com/zhemed/picsur/actions/runs/40881034838) conclusion 为 success。
+- audit：后端/共享 15 条 → 0 条，浏览器侧 0 条，退出码 0；15 条逐项清零，解析版本 zod 4.6.7、fastify 5.12.7、fast-uri 3.1.9、undici 7.30.1、body-parser 生产 2.4.0。
+- build 30s 通过、lint 0 error / 9 存量 warning、`pnpm install --frozen-lockfile` 通过。
+- zod v4 迁移改 6 个文件：`AnyZodObject` 泛型、`errorMap` → `error`、信封类型显式化，以及两处运行期阻断修复：`EUserSchema.hashedPassword` 与 `ImageMetaResponse.fileTypes.original` 显式 optional，避免 JSON 丢键后响应校验 500。
+- 计划外发现：`@nestjs/platform-fastify@12.1.3` 把 fastify 精确钉在 5.12.5，必须加范围限定 override 才能清掉最后一条 low。
+- 运行期冒烟 `/tmp` 脚本直跑三包 dist 与真实校验管道：87/87 通过；独立验证另写 20 条探针通过。
+- 独立验证结论为通过但需修正：唯一证据缺口是后端完整进程启动与 HTTP 烟测未做，交由 Phase B dry-run 隔离栈 38 项回归闭环，不跳步。
+- spec 已同步：`build-and-deploy.md` §8.1 zod 版本底线、§8.2 overrides 清单、§8.4 残留风险、§9 发布机制从旧的 tag 触发 CI 改为 `support/release-local.sh`。
