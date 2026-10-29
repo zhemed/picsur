@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/picsur-frontend/frontend/index.md", "reason": "核对前端规范：i18n 清理、只动页脚的边界、Material 主题不得改动"}
+{"file": ".trellis/tasks/10-29-footer-line-blank/research/footer-research.md", "reason": "按调研结论核对最小 diff 与页脚高度保留是否成立"}
