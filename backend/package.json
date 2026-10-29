@@ -1,6 +1,6 @@
 {
   "name": "picsur-backend",
-  "version": "0.10.6",
+  "version": "0.10.7",
   "description": "Backend for Picsur",
   "license": "AGPL-3.0-or-later",
   "repository": "https://github.com/zhemed/picsur",

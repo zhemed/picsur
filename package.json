@@ -1,6 +1,6 @@
 {
   "private": true,
-  "version": "0.10.6",
+  "version": "0.10.7",
   "license": "AGPL-3.0-or-later",
   "scripts": {
     "devdb:start": "docker compose -f ./support/dev.docker-compose.yml up -d",
