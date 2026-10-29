@@ -75,10 +75,10 @@ USER root
 
 RUN apk add --no-cache \
     build-base=0.5-r3 meson=1.9.1-r0 cmake=4.1.3-r0 pkgconf=2.5.1-r0 \
-    glib-dev=2.86.3-r0 expat-dev=2.8.5-r0 libexif-dev=0.6.26-r0 jpeg-dev=9f-r0 \
+    glib-dev=2.86.3-r0 expat-dev=2.9.0-r0 libexif-dev=0.6.26-r0 jpeg-dev=9f-r0 \
     libjxl-dev=0.11.2-r0 openjpeg-dev=2.5.4-r2 libpng-dev=1.6.59-r0 tiff-dev=4.7.2-r0 \
     libheif-dev=1.23.0-r0 libwebp-dev=1.6.0-r0 cgif-dev=0.5.4-r0 \
-    imagemagick-dev=7.1.2.29-r0 librsvg-dev=2.61.2-r0 pango-dev=1.56.4-r0 \
+    imagemagick-dev=7.1.2.34-r0 librsvg-dev=2.61.2-r0 pango-dev=1.56.4-r0 \
     cfitsio-dev=4.6.3-r0 poppler-dev=25.12.0-r0 libspng-dev=0.7.4-r1 \
     lcms2-dev=2.19-r0 fftw-dev=3.3.10-r7 libimagequant-dev=4.2.2-r0
 
@@ -103,9 +103,9 @@ USER root
 
 COPY --from=vips_builder /usr/local /usr/local
 RUN apk add --no-cache \
-    pkgconf=2.5.1-r0 glib=2.86.3-r0 expat=2.8.5-r0 libexif=0.6.26-r0 jpeg=9f-r0 \
+    pkgconf=2.5.1-r0 glib=2.86.3-r0 expat=2.9.0-r0 libexif=0.6.26-r0 jpeg=9f-r0 \
     libjxl=0.11.2-r0 openjpeg=2.5.4-r2 libpng=1.6.59-r0 tiff=4.7.2-r0 \
-    libheif=1.23.0-r0 libwebp=1.6.0-r0 cgif=0.5.4-r0 imagemagick=7.1.2.29-r0 \
+    libheif=1.23.0-r0 libwebp=1.6.0-r0 cgif=0.5.4-r0 imagemagick=7.1.2.34-r0 \
     librsvg=2.61.2-r0 pango=1.56.4-r0 cfitsio=4.6.3-r0 poppler=25.12.0-r0 \
     poppler-glib=25.12.0-r0 libspng=0.7.4-r1 lcms2=2.19-r0 fftw=3.3.10-r7 \
     libimagequant=4.2.2-r0
@@ -126,7 +126,7 @@ RUN npm install -g pnpm@9.6.0 node-gyp@11.5.0 node-addon-api@8.2.2 \
  && find /usr/local/lib/node_modules -path '*/node-gyp/gyp/*' \( -name 'gyp' -o -name '*.py' \) -exec chmod +x {} + \
  && test -n "$(find /usr/local/lib/node_modules -name gyp_main.py -print -quit)"
 # sharp 从源码编译需要 python3 + 编译工具链
-RUN apk add --no-cache python3=3.12.15-r0 build-base=0.5-r3
+RUN apk add --no-cache python3=3.12.16-r0 build-base=0.5-r3
 
 WORKDIR /picsur
 COPY --from=js_builder /trimmed ./
