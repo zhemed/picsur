@@ -263,7 +263,7 @@ pkill -x node # 或先 pgrep 拿 PID 再 kill <pid>
 | `sharp`                               | **^0.35.5**                          | 继承的 libvips CVE                                                                                                                                                                                                    |
 | **libvips（镜像内自编译）**           | **≥8.18.7**                          | sharp 0.35 的 `config.libvips` 硬要求；低于它镜像构建会在 `pnpm install --prod` 阶段失败                                                                                                                              |
 | `file-type`（**我们自己的直接依赖**） | **^21.3.4，不能用 22**               | `file-type@22` 的 `engines` 是 `node >= 22`。⚠️ 注意：`@nestjs/common@12.1.3` 自己依赖 `file-type@22.1.1`（Nest 的 `FileTypeValidator` 用 `import()` 懒加载，**本项目未启用该功能**）——它确实在生产树里，但不会被加载 |
-| `zod`                                 | ^3（暂不动）                         | v4 是破坏性升级，属 T6                                                                                                                                                                                                |
+| `zod`                                 | **^4.6.7**（2026-10-29 已迁 v4）     | v3 分支无修复版本，2026-10-29 已迁 v4；v4 对缺失键更严格，可选字段必须显式 optional                                                                                                                                                                                                |
 
 ### 8.2 `pnpm.overrides` 策略（根 `package.json`）
 
@@ -272,6 +272,10 @@ pkill -x node # 或先 pgrep 拿 PID 再 kill <pid>
   （裸 `minimatch: ^9` 会把 eslint 的 minimatch@3 顶掉，直接搞坏构建链）。
 - 每个 override 落地前必须：`pnpm install` + 三包构建 + 冒烟；不过就撤掉并记入残留说明。
 - 当前清单与逐条理由见任务 `10-13-dep-security-upgrade` 的 `research/audit-after.md`。
+- 2026-10-29（`10-29-dep-security-v4`）新增：`fast-uri: ^3.1.9`、`undici: ^7.30.1`、
+  `body-parser@>=2.0.0 <2.4.0 → ^2.4.0`、`fastify@>=5.0.0 <5.12.6 → ^5.12.6`。
+  最后一条是必要的范围 override：`@nestjs/platform-fastify@12.1.3` 把 `fastify` 精确钉在 `5.12.5`，
+  只升 backend 依赖清不掉那条 low。同轮 `backend` 直接依赖 `fastify ^5.12.6`，三包 `zod ^4.6.7`。
 - **已批准的跨大版本例外（就一条）**：`node-gyp: ^11`（10→11）。它一次带走 `tar` / `glob` / `minimatch` /
   `brace-expansion` / `ip-address` / `http-cache-semantics` 一大片**编译链**告警；三个原生模块
   （`qoi-img` / `bmp-img` / `posix.js`）在容器里实测可编译、可加载。
@@ -325,7 +329,10 @@ pkill -x node # 或先 pgrep 拿 PID 再 kill <pid>
   「服务器侧」与「浏览器侧」）。
 - **全量口径**（含 devDeps）升级后仍有 critical 6 / high 92 / moderate 81 / low 16，几乎全在前端构建链
   （Angular CLI / webpack / eslint / pacote 等）。
-- `zod` 仍是 v3；升 v4 属破坏性变更，需全量回归，暂不动。
+- `zod` 已于 2026-10-29 迁到 `^4.6.7`（任务 `10-29-dep-security-v4`）：v4 对 JSON 丢键更严格，
+  响应 DTO 的可选字段必须显式 `optional()`，否则后端响应校验 500；迁移改动见
+  `shared/src/dto/api/api.dto.ts`、`shared/src/dto/api/image.dto.ts`、`shared/src/entities/user.entity.ts`。
+  v4 默认错误文案有细微变化，仅影响偏好输入框展示。
 - `pnpm audit` 只反映「已知 advisory 的命中情况」，**不等于**「没有漏洞」。
 
 ---
@@ -340,7 +347,7 @@ pkill -x node # 或先 pgrep 拿 PID 再 kill <pid>
 | 版本线                 | 自有版本线，从 **`0.6.0`** 起；四个 `package.json` 同步，`/api/info` 与设置页「关于」版本区块都读它；页脚来源行已于 2026-10-29 清空，不再显示版本                                                                                                                                                                                                                                               |
 | 许可                   | AGPL-3.0（`LICENSE` 不动）。README 保留上游出处声明 —— 这是**合规声明**，不是依赖                                                                                                                                                                                                                                                   |
 | 发布（提交）           | 提交默认 push 到 `origin`（见 `AGENTS.md`）                                                                                                                                                                                                                                                                                         |
-| 发布（镜像）           | **`v*` tag 推送即自动构建并发布到 `ghcr.io/zhemed/picsur`**（`.github/workflows/release-image.yml`，标签 `:<版本>`、`:<主>.<次>`、`:latest`）；也可手动 `workflow_dispatch` 只刷 `:latest`。用内置 `GITHUB_TOKEN` + `packages: write`，**不需要额外 secret**。发布后必须 `docker pull` 起一次隔离栈跑 34 项回归（CI 绿 ≠ 镜像可用） |
+| 发布（镜像）           | **`support/release-local.sh` 本地构建并发布到 `ghcr.io/zhemed/picsur`**（2026-10-16 起 GitHub Actions 只保留 `ci.yml`，不再由 tag 触发构建；脚本本地构建并推送 `:<版本>`、`:v<版本>`、`:<主>.<次>`、`:latest`、`:allinone`，成功后自动打推 `v<版本>` tag；需要先 `docker login ghcr.io`）。发布后必须 `docker pull` 起一次隔离栈跑 `support/regression-image-api.sh`，基础 34 项、有数据库访问时 38 项，必须 0 failed（CI 绿 ≠ 镜像可用） |
 | 部署镜像来源           | `docker-compose.yml` 的 `image: ${PICSUR_IMAGE:-ghcr.io/zhemed/picsur:latest}`：默认拉发布镜像，`--build` 仍可本地构建；固定版本用 `PICSUR_IMAGE=ghcr.io/zhemed/picsur:0.6.0`                                                                                                                                                       |
 | 文档分工               | README 只讲"跑起来"（≤35 行），运维细节在 `docs/MAINTAINING.md`，可执行契约在本文件                                                                                                                                                                                                                                                 |
 | 允许出现上游字样的位置 | 仅 `LICENSE`、README 的出处声明、`.trellis/**` 历史记录；**其余一律清空**                                                                                                                                                                                                                                                           |
