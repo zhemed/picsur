@@ -986,3 +986,26 @@ zh-default 只改前端：picsur-img 增加 native 模式（原生 <img loading=
 ### Status
 
 [OK] **Completed**
+
+
+## Session 43: 单图多核可行性调查：前后端当前都不能，QOI 分块是唯一有上限的路径
+<!-- trellis-session: v=2 fp=ec6d93a29d6b9615 -->
+
+**Date**: 2026-10-30
+**Task**: 单图多核可行性调查：前后端当前都不能，QOI 分块是唯一有上限的路径
+**Package**: picsur-shared
+**Branch**: `master`
+
+### Summary
+
+只读调查单张照片上传能否走多核。前端上传链路无客户端图像计算，唯一 Worker 是展示阶段 QOI 解码且单图不可拆；后端 24MP JPEG 单请求 worker 内 495ms，解码 39.8% 与 QOI 编码 58.9% 都不随 sharp.concurrency 加速，CPU/wall 约 1.0 到 1.12，加 IPC 131ms 后判定单核。QOI 分块并行格式层面可行且原型验证拼接解码正确，但需 native 重写，端到端上限约 1.53 到 1.77 倍、实际预计 1.3 到 1.5 倍，预扫描不并行时约 1.1 倍。换 WebP/JPEG 输出不解决。规格已新增 upload-concurrency.md 第 10 节。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `daf7eed` | docs(spec): record single-image multi-core findings [task:10-30-single-image-multicore-eval] |
+
+### Status
+
+[OK] **Completed**
