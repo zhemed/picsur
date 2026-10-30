@@ -1,0 +1,5 @@
+{"file":".trellis/spec/picsur-backend/backend/upload-concurrency.md","reason":"验收依据：池化后并发语义与瓶颈清单是否被正确解决"}
+{"file":".trellis/spec/picsur-backend/backend/image-api-contracts.md","reason":"验收依据：上传与取回接口行为、错误路径是否保持不变"}
+{"file":".trellis/tasks/10-30-upload-worker-pool-benchmark/design.md","reason":"验收依据：实现是否与设计中的池参数、超时与回退策略一致"}
+{"file":".trellis/tasks/10-30-upload-worker-pool-benchmark/research/benchmark-baseline.md","reason":"验收依据：池化前后压测口径必须与基线一致"}
+{"file":".trellis/tasks/10-30-upload-worker-pool-benchmark/research/benchmark-after.md","reason":"待检产物：池化后压测报告"}

@@ -1,0 +1,139 @@
+{
+  "tool": "support/bench-upload.cjs",
+  "startedAt": "2026-10-30T12:02:00.392Z",
+  "base": "http://127.0.0.1:18080",
+  "mode": "concurrent",
+  "count": 8,
+  "concurrency": 4,
+  "fixture": {
+    "file": "base.png",
+    "path": "/tmp/picsur-fx/base.png",
+    "bytes": 488
+  },
+  "instance": {
+    "container": "picsur-bench",
+    "containerId": "8b90977d8e44bebab6a523a2bc2ceb3e0eb623f92027e2ce709c41a74a5b2f92",
+    "cpuUsec": 1374994,
+    "cpuSeconds": 1.374994,
+    "cpuCoresAverage": 4.506622751932718
+  },
+  "wallMs": 305.105192,
+  "ok": 8,
+  "failed": 0,
+  "throughputPerSecond": 26.220464973273877,
+  "latencyMs": {
+    "min": 105.34697700000001,
+    "p50": 116.14270099999999,
+    "p90": 142.952466,
+    "p95": 142.952466,
+    "max": 142.952466,
+    "mean": 124.47423225,
+    "count": 8
+  },
+  "peakConcurrencyObserved": 4,
+  "sampling": {
+    "intervalMs": 50,
+    "samples": 5,
+    "workerPeak": 4,
+    "workerRssPeakBytes": 281960448,
+    "mainRssPeakBytes": 153911296,
+    "mainPid": 2213646,
+    "workerCounts": [
+      0,
+      4,
+      0,
+      4,
+      4
+    ]
+  },
+  "requests": [
+    {
+      "index": 1,
+      "startOffsetMs": 33.40383799999999,
+      "ok": true,
+      "status": 201,
+      "latencyMs": 142.952466,
+      "id": "ca546e0d-aaa6-425f-90bd-3daeeee67a36",
+      "body": "{\"success\":true,\"statusCode\":201,\"timestamp\":\"2026-10-30T12:02:00.579Z\",\"timeMs\":126,\"data\":{\"id\":\"ca546e0d-aaa6-425f-90bd-3daeeee67a36\",\"user_id\":\"52f13a18-34c7-416f-95bb-1d2c9331c9f6\",\"created\":\"2026-10-30T12:02:00.573Z\",\"file_name\":\"base\",\"source_filetype\":\"image:png\",\"width\":200,\"height\":150,\"expires_at\":null,\"delete_key\":\"Dh4zQZajwYpeOu414f62Kap3rBKbPR7b\"}}"
+    },
+    {
+      "index": 2,
+      "startOffsetMs": 53.33797799999999,
+      "ok": true,
+      "status": 201,
+      "latencyMs": 139.011829,
+      "id": "1c7bcbdc-0c8e-4005-8470-3632db643765",
+      "body": "{\"success\":true,\"statusCode\":201,\"timestamp\":\"2026-10-30T12:02:00.580Z\",\"timeMs\":125,\"data\":{\"id\":\"1c7bcbdc-0c8e-4005-8470-3632db643765\",\"user_id\":\"52f13a18-34c7-416f-95bb-1d2c9331c9f6\",\"created\":\"2026-10-30T12:02:00.576Z\",\"file_name\":\"base\",\"source_filetype\":\"image:png\",\"width\":200,\"height\":150,\"expires_at\":null,\"delete_key\":\"w8LRi06u7Z8rbfqrorQExaHChdLI4LFG\"}}"
+    },
+    {
+      "index": 3,
+      "startOffsetMs": 53.861294,
+      "ok": true,
+      "status": 201,
+      "latencyMs": 140.34300100000002,
+      "id": "fa25673c-4acf-4ce0-a609-c8e4b150e36d",
+      "body": "{\"success\":true,\"statusCode\":201,\"timestamp\":\"2026-10-30T12:02:00.584Z\",\"timeMs\":127,\"data\":{\"id\":\"fa25673c-4acf-4ce0-a609-c8e4b150e36d\",\"user_id\":\"52f13a18-34c7-416f-95bb-1d2c9331c9f6\",\"created\":\"2026-10-30T12:02:00.581Z\",\"file_name\":\"base\",\"source_filetype\":\"image:png\",\"width\":200,\"height\":150,\"expires_at\":null,\"delete_key\":\"eNlfjBsmZDlA2Qr8DyGAcY20JWf64hFJ\"}}"
+    },
+    {
+      "index": 4,
+      "startOffsetMs": 54.26857199999999,
+      "ok": true,
+      "status": 201,
+      "latencyMs": 131.802024,
+      "id": "e7cf466e-e97d-410a-9b54-c80beb37d264",
+      "body": "{\"success\":true,\"statusCode\":201,\"timestamp\":\"2026-10-30T12:02:00.574Z\",\"timeMs\":115,\"data\":{\"id\":\"e7cf466e-e97d-410a-9b54-c80beb37d264\",\"user_id\":\"52f13a18-34c7-416f-95bb-1d2c9331c9f6\",\"created\":\"2026-10-30T12:02:00.566Z\",\"file_name\":\"base\",\"source_filetype\":\"image:png\",\"width\":200,\"height\":150,\"expires_at\":null,\"delete_key\":\"khL7enuNcLQDvQk4hHgZsCr7zZO4BlGO\"}}"
+    },
+    {
+      "index": 5,
+      "startOffsetMs": 186.364406,
+      "ok": true,
+      "status": 201,
+      "latencyMs": 116.14270099999999,
+      "id": "be070a87-bcad-412f-aecf-4d7256a63ae9",
+      "body": "{\"success\":true,\"statusCode\":201,\"timestamp\":\"2026-10-30T12:02:00.695Z\",\"timeMs\":108,\"data\":{\"id\":\"be070a87-bcad-412f-aecf-4d7256a63ae9\",\"user_id\":\"52f13a18-34c7-416f-95bb-1d2c9331c9f6\",\"created\":\"2026-10-30T12:02:00.689Z\",\"file_name\":\"base\",\"source_filetype\":\"image:png\",\"width\":200,\"height\":150,\"expires_at\":null,\"delete_key\":\"obkvS1z8tscFaK8HjJExiOvXN0fyZ1WL\"}}"
+    },
+    {
+      "index": 6,
+      "startOffsetMs": 191.351131,
+      "ok": true,
+      "status": 201,
+      "latencyMs": 107.66324699999998,
+      "id": "1c9bd495-f812-4f25-9bbd-8b248a708882",
+      "body": "{\"success\":true,\"statusCode\":201,\"timestamp\":\"2026-10-30T12:02:00.691Z\",\"timeMs\":103,\"data\":{\"id\":\"1c9bd495-f812-4f25-9bbd-8b248a708882\",\"user_id\":\"52f13a18-34c7-416f-95bb-1d2c9331c9f6\",\"created\":\"2026-10-30T12:02:00.685Z\",\"file_name\":\"base\",\"source_filetype\":\"image:png\",\"width\":200,\"height\":150,\"expires_at\":null,\"delete_key\":\"DFNWKwnekhtLmeZLd4bDWTANhqPlnskQ\"}}"
+    },
+    {
+      "index": 7,
+      "startOffsetMs": 192.47043299999999,
+      "ok": true,
+      "status": 201,
+      "latencyMs": 112.531613,
+      "id": "4c77db8b-2a1a-48e2-b4d9-4109b4a38715",
+      "body": "{\"success\":true,\"statusCode\":201,\"timestamp\":\"2026-10-30T12:02:00.698Z\",\"timeMs\":108,\"data\":{\"id\":\"4c77db8b-2a1a-48e2-b4d9-4109b4a38715\",\"user_id\":\"52f13a18-34c7-416f-95bb-1d2c9331c9f6\",\"created\":\"2026-10-30T12:02:00.694Z\",\"file_name\":\"base\",\"source_filetype\":\"image:png\",\"width\":200,\"height\":150,\"expires_at\":null,\"delete_key\":\"p7RHHNlOftoFa77G3lmSZQOrQGdALx7f\"}}"
+    },
+    {
+      "index": 8,
+      "startOffsetMs": 194.33473,
+      "ok": true,
+      "status": 201,
+      "latencyMs": 105.34697700000001,
+      "id": "04a265da-4787-45c7-94e1-3dd842760cf7",
+      "body": "{\"success\":true,\"statusCode\":201,\"timestamp\":\"2026-10-30T12:02:00.692Z\",\"timeMs\":100,\"data\":{\"id\":\"04a265da-4787-45c7-94e1-3dd842760cf7\",\"user_id\":\"52f13a18-34c7-416f-95bb-1d2c9331c9f6\",\"created\":\"2026-10-30T12:02:00.685Z\",\"file_name\":\"base\",\"source_filetype\":\"image:png\",\"width\":200,\"height\":150,\"expires_at\":null,\"delete_key\":\"wWjlLb1gDdITEo0UG3bUHjcXYwpMeb5l\"}}"
+    }
+  ],
+  "verify": {
+    "skipped": false,
+    "ok": true,
+    "width": 200,
+    "height": 150,
+    "channels": 4,
+    "responseBytes": 1061,
+    "contentType": "image/png",
+    "reason": "pixels identical to fixture"
+  },
+  "cleanup": {
+    "skipped": false,
+    "ok": true,
+    "deleted": 8,
+    "status": 201
+  }
+}

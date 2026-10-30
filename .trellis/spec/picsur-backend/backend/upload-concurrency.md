@@ -23,27 +23,28 @@ GET  /i/:id.:ext                  # 读路径转码，派生图 miss 时再触�
 ```
 
 ```ts
-// 上传编排 → 转换：每次转换新建一个 wrapper，无池化
+// 上传编排 → 转换：每次转换新建一个 wrapper，由进程级 worker 池出租一个常驻子进程
 ImageManagerService.upload()                          // backend/src/managers/image/image.service.ts:100-170
   → ImageProcessorService.process()                    // backend/src/managers/image/image-processor.service.ts:36-55
   → ImageConverterService.convertImage()               // backend/src/managers/image/image-converter.service.ts:83-108
   → new SharpWrapper(timeLimitMS, memLimit)            // backend/src/managers/image/image-converter.service.ts:84
-  → SharpWrapper.start()                               // backend/src/workers/sharp.wrapper.ts:54-65
-  → child_process.fork('sharp.worker.js')              // 每次转换一个子进程，结束即 purge
+  → SharpWrapper.start()                               // backend/src/workers/sharp.wrapper.ts
+  → SharpWorkerPool.acquire(memLimit, timeout)         // backend/src/workers/sharp/worker-pool.ts（2026-10-30 起）
+  → 复用空闲 worker 或 fork 新子进程；成功后 release，失败/超时 destroy
 ```
 
 ```ts
 // 子进程环境变量只有三个键；容器级 env 不会透传进来
 fork(WORKER_PATH, {
   serialization: 'advanced',
-  timeout: instance_timeout,
   env: {
-    MEMORY_LIMIT_MB: memory_limit.toString(),
+    MEMORY_LIMIT_MB: memoryLimit.toString(),
     MAX_IMAGE_PIXELS: ReadMaxImagePixelsFromEnv().toString(),
     NODE_OPTIONS: '--no-warnings',
   },
   stdio: 'overlapped',
 });
+// 注意：worker 池时代的 fork 没有 timeout 选项；按任务计时的 pTimeout 在 wrapper 里
 ```
 
 ---
@@ -57,7 +58,7 @@ fork(WORKER_PATH, {
 | 部署 | 单容器 all-in-one，单副本；一条 `docker run`，容器无 CPU/内存配额 | `README.md:6-14`、`docs/MAINTAINING.md:5-13`、`build-and-deploy.md:482` |
 | Node 进程 | 单进程、单事件循环；无 cluster、无 pm2、无 worker_threads、无副本 | `backend/src/main.ts:19-59`、`Dockerfile.allinone:75` |
 | 请求受理 | 并发：multipart 流式解析在事件循环上交错，无全局上传锁 | `backend/src/routes/image/image-manage.controller.ts:58-90`、`backend/src/main.ts:33` |
-| 转码 | 每次转换 fork 一个新子进程，结束或超时即 kill，无常驻池 | `backend/src/workers/sharp.wrapper.ts:54-65`、`:231-235` |
+| 转码 | 常驻 worker 池：每次转换从池里租一个子进程，空闲 60 秒回收；并发上限 min(4, CPU 核数)，超出排队 | `backend/src/workers/sharp/worker-pool.ts`、`backend/src/workers/sharp.wrapper.ts` |
 | 子进程内 | 单条 JS 线程，同一时刻只处理一张图 | `backend/src/workers/sharp/sharp.worker.ts:110-129` |
 | 跨图片并行 | 只来自多请求并发 → 多子进程；单进程内没有图片级并行 | 同上 |
 | 主进程同步段 | SVG 净化、file-type 判定与 `isSvg` 全文扫描、WebP 头解析直接在事件循环上跑 | `backend/src/managers/image/svg-security.service.ts:41-54`、`backend/src/managers/image/image.service.ts:359-401` |
@@ -103,7 +104,8 @@ fork(WORKER_PATH, {
 
 ### 3.5 已确认的瓶颈清单，按影响排序
 
-1. 每次转换新 fork 一个 Node 子进程，无常驻池：固定包含进程启动、模块加载、libvips 初始化开销；并发 N 张就是 N 个进程互抢 CPU 与内存。
+1. ~~每次转换新 fork 一个 Node 子进程，无常驻池~~ **已于 2026-10-30 修复**：改为进程级常驻 worker 池，
+   见第 9 节。修复前的基线数据保留在任务 `10-30-upload-worker-pool-benchmark` 的 research 里。
 2. 单实例单进程：主进程事件循环上的同步段无法横向分摊。
 3. 主进程同步纯 JS CPU 段阻塞事件循环：SVG 净化最典型，期间所有其它请求被卡住。
 4. 主进程 sharp metadata 预检受 libuv 默认 4 线程池限制：并发上传大于 4 时预检排队。
@@ -178,10 +180,52 @@ fork(WORKER_PATH, {
 
 ## 8. 后续候选方向：未实施，需先压测
 
-1. 常驻或池化转换 worker 替代每次 fork，降低单张图固定开销。
+1. ~~常驻或池化转换 worker 替代每次 fork~~ **已完成 2026-10-30**，见第 9 节。
 2. 前端批量上传加回批量端点：先补 `POST /api/image/upload/bulk`，再接 `multiple` 与并发上限，否则只是把 N 次串行请求变成 N 次并发请求。
 3. 消除上传后浏览的二次转码：上传时预生成常用宽度派生图，或浏览页直接用主格式不带宽高。
 4. 评估 `UV_THREADPOOL_SIZE` 与 libvips 并发度，确认收益后再改。
 5. 部署层扩容与限流外置，只对多实例有意义。
 
-> 以上均属新任务范围，需先压测确认收益，不要直接改。
+> 以上未完成项均属新任务范围，需先压测确认收益，不要直接改。
+
+---
+
+## 9. 常驻 worker 池：2026-10-30 落地
+
+实现：`backend/src/workers/sharp/worker-pool.ts`（新增）加 `backend/src/workers/sharp.wrapper.ts`（改租约模型）。
+`sharp.worker.ts` 协议未改，`image-converter.service.ts` 调用方式未改。
+
+### 9.1 机制
+
+- 进程级单例池，按 `MEMORY_LIMIT_MB` 分池（子进程 env 在 fork 时写死，不同上限不能共享）。
+- 并发上限 `max(1, min(4, availableParallelism()))`，无环境变量；正在 fork 的 slot 也计入上限。
+- 空闲 TTL 60 秒，`timer.unref()`；`process.once('exit')` 全量 kill 子进程。
+- 每次转换：`acquire` 租一个 worker → `init`/`operation`/`finish` → 成功 `release`，超时/失败/退出 `destroy` 并补位。
+- 等待队列 FIFO，整体受任务超时 `pTimeout` 约束；排队超时的请求不占 worker。
+- 子进程的 fork 不再带 `timeout` 选项，任务级计时在 wrapper 的 `pTimeout`。
+
+### 9.2 同口径实测收益：run B 配方，与 fork 基线对比
+
+| 场景 | 基线 | 池化后 | 变化 |
+|---|---|---|---|
+| 串行 10 张 p50 | 125.4ms | 13.6ms | 降 89.2% |
+| 串行 10 张总耗时 | 1341.4ms | 348.9ms | 降 74.0% |
+| 并发 4×8 总耗时 / p50 | 404.0 / 159.5ms | 267.5 / 37.4ms | 降 33.8% / 76.6% |
+| 并发 8×8 总耗时 / p50 | 340.1 / 267.5ms | 268.5 / 208.4ms | 降 21.0% / 22.1% |
+| 并发 8 worker 峰值 | 8 | 4 | 等于池上限 |
+| 并发 8 worker RSS 峰值 | 540.4MB | 291.9MB | 降 46.0% |
+| 并发 8 平均核数 | 6.79 | 4.08 | 降 40% |
+
+- 26 次上传只 fork 9 个 worker；串行 10 张只 fork 1 次。
+- 错误路径不变：超像素 400、损坏图 400 可读、worker 解码失败 400 可读，无 500；失败 worker 会销毁并补位。
+- 38 项图像接口回归全绿；TTL 到点回收、实例退出无残留。
+- 数据与逐请求证据见 `.trellis/tasks/archive/2026-10/10-30-upload-worker-pool-benchmark/research/`。
+
+### 9.3 前提与残留风险
+
+- **非容器部署**：只注册了 `process.once('exit')` 清理，没有注册 SIGTERM 转发；容器 cgroup 回收能兜住，
+  但裸机直跑时需要确认主进程退出路径会杀子进程，或后续补信号处理。
+- **内存代价**：4 个空闲 worker 会保留到 TTL 60 秒，实测 4 worker RSS 峰值约 292MB；宿主内存紧时要盯着。
+- 排队策略是硬上限，并发 8 时后 4 个请求要等第一波释放；这是有意用吞吐换资源上限，压测显示总耗时仍优于 fork 版。
+- 已知可维护性建议，均不阻塞合并：`WorkerSlot.ready` 目前无消费者；wrapper 随机 workerID 与池递增 #N 两套日志标识；排队超时后后台可能多 fork 一个并 park。
+

@@ -1,0 +1,4 @@
+{"file":".trellis/spec/picsur-backend/backend/upload-concurrency.md","reason":"本轮调查产出的并发模型规格：单进程事件循环、fork 子进程、QOI 单线程编解码、瓶颈清单，是池化设计与压测口径的依据"}
+{"file":".trellis/spec/picsur-backend/backend/build-and-deploy.md","reason":"构建与部署契约：Node 20 构建硬约束、镜像与本地运行方式、环境变量契约"}
+{"file":".trellis/spec/picsur-backend/backend/image-api-contracts.md","reason":"上传与取回接口契约：路径、状态码、错误矩阵，压测与回归用例的依据"}
+{"file":".trellis/spec/picsur-backend/backend/quality-guidelines.md","reason":"代码质量与验证口径"}

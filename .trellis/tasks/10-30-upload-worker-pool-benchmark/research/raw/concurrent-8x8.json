@@ -1,0 +1,138 @@
+{
+  "tool": "support/bench-upload.cjs",
+  "startedAt": "2026-10-30T12:03:05.911Z",
+  "base": "http://127.0.0.1:18080",
+  "mode": "concurrent",
+  "count": 8,
+  "concurrency": 8,
+  "fixture": {
+    "file": "base.png",
+    "path": "/tmp/picsur-fx/base.png",
+    "bytes": 488
+  },
+  "instance": {
+    "container": "picsur-bench",
+    "containerId": "8b90977d8e44bebab6a523a2bc2ceb3e0eb623f92027e2ce709c41a74a5b2f92",
+    "cpuUsec": 1640770,
+    "cpuSeconds": 1.64077,
+    "cpuCoresAverage": 6.615447325329735
+  },
+  "wallMs": 248.02102100000002,
+  "ok": 8,
+  "failed": 0,
+  "throughputPerSecond": 32.255330486684834,
+  "latencyMs": {
+    "min": 162.17798200000001,
+    "p50": 181.75095500000003,
+    "p90": 193.25003800000002,
+    "p95": 193.25003800000002,
+    "max": 193.25003800000002,
+    "mean": 180.33018750000002,
+    "count": 8
+  },
+  "peakConcurrencyObserved": 8,
+  "sampling": {
+    "intervalMs": 50,
+    "samples": 4,
+    "workerPeak": 8,
+    "workerRssPeakBytes": 483106816,
+    "mainRssPeakBytes": 153755648,
+    "mainPid": 2213646,
+    "workerCounts": [
+      0,
+      8,
+      8,
+      1
+    ]
+  },
+  "requests": [
+    {
+      "index": 1,
+      "startOffsetMs": 33.03354,
+      "ok": true,
+      "status": 201,
+      "latencyMs": 181.75095500000003,
+      "id": "e89f899a-499f-4c95-a240-1a55ad4a2dcb",
+      "body": "{\"success\":true,\"statusCode\":201,\"timestamp\":\"2026-10-30T12:03:06.141Z\",\"timeMs\":168,\"data\":{\"id\":\"e89f899a-499f-4c95-a240-1a55ad4a2dcb\",\"user_id\":\"52f13a18-34c7-416f-95bb-1d2c9331c9f6\",\"created\":\"2026-10-30T12:03:06.129Z\",\"file_name\":\"base\",\"source_filetype\":\"image:png\",\"width\":200,\"height\":150,\"expires_at\":null,\"delete_key\":\"04A5sNQt6EcjopyTmRZVPNrtWOWKWa6f\"}}"
+    },
+    {
+      "index": 2,
+      "startOffsetMs": 52.540322,
+      "ok": true,
+      "status": 201,
+      "latencyMs": 186.23714999999999,
+      "id": "9717410b-949e-4c15-874d-e24a711daedb",
+      "body": "{\"success\":true,\"statusCode\":201,\"timestamp\":\"2026-10-30T12:03:06.150Z\",\"timeMs\":175,\"data\":{\"id\":\"9717410b-949e-4c15-874d-e24a711daedb\",\"user_id\":\"52f13a18-34c7-416f-95bb-1d2c9331c9f6\",\"created\":\"2026-10-30T12:03:06.145Z\",\"file_name\":\"base\",\"source_filetype\":\"image:png\",\"width\":200,\"height\":150,\"expires_at\":null,\"delete_key\":\"CJEZwdR2cG3z7rsVl6E8OD7NNPhVNBhV\"}}"
+    },
+    {
+      "index": 3,
+      "startOffsetMs": 53.038532000000004,
+      "ok": true,
+      "status": 201,
+      "latencyMs": 185.26394800000003,
+      "id": "e7157636-c06e-4a8b-b460-2f5c60117ee9",
+      "body": "{\"success\":true,\"statusCode\":201,\"timestamp\":\"2026-10-30T12:03:06.150Z\",\"timeMs\":172,\"data\":{\"id\":\"e7157636-c06e-4a8b-b460-2f5c60117ee9\",\"user_id\":\"52f13a18-34c7-416f-95bb-1d2c9331c9f6\",\"created\":\"2026-10-30T12:03:06.145Z\",\"file_name\":\"base\",\"source_filetype\":\"image:png\",\"width\":200,\"height\":150,\"expires_at\":null,\"delete_key\":\"y1p8nYPGy5YEpHWMnCC03coFZiD2G5xq\"}}"
+    },
+    {
+      "index": 4,
+      "startOffsetMs": 53.509496999999996,
+      "ok": true,
+      "status": 201,
+      "latencyMs": 183.84799800000002,
+      "id": "428b315e-0609-471f-a88a-8f86fa6b3d55",
+      "body": "{\"success\":true,\"statusCode\":201,\"timestamp\":\"2026-10-30T12:03:06.147Z\",\"timeMs\":168,\"data\":{\"id\":\"428b315e-0609-471f-a88a-8f86fa6b3d55\",\"user_id\":\"52f13a18-34c7-416f-95bb-1d2c9331c9f6\",\"created\":\"2026-10-30T12:03:06.135Z\",\"file_name\":\"base\",\"source_filetype\":\"image:png\",\"width\":200,\"height\":150,\"expires_at\":null,\"delete_key\":\"v0iGHmWVPICrPaBYFrbrnmR6lvQ7TO8E\"}}"
+    },
+    {
+      "index": 5,
+      "startOffsetMs": 53.944531999999995,
+      "ok": true,
+      "status": 201,
+      "latencyMs": 162.17798200000001,
+      "id": "b7f056f2-25c9-408a-8ad3-19e6605e97c3",
+      "body": "{\"success\":true,\"statusCode\":201,\"timestamp\":\"2026-10-30T12:03:06.122Z\",\"timeMs\":142,\"data\":{\"id\":\"b7f056f2-25c9-408a-8ad3-19e6605e97c3\",\"user_id\":\"52f13a18-34c7-416f-95bb-1d2c9331c9f6\",\"created\":\"2026-10-30T12:03:06.107Z\",\"file_name\":\"base\",\"source_filetype\":\"image:png\",\"width\":200,\"height\":150,\"expires_at\":null,\"delete_key\":\"YQEHeh0oYjZOw4QPAasy5CTL7xSE1H4p\"}}"
+    },
+    {
+      "index": 6,
+      "startOffsetMs": 54.30610300000001,
+      "ok": true,
+      "status": 201,
+      "latencyMs": 177.947873,
+      "id": "d80dca5e-c981-40e3-a6cb-06e0adf27ab4",
+      "body": "{\"success\":true,\"statusCode\":201,\"timestamp\":\"2026-10-30T12:03:06.143Z\",\"timeMs\":162,\"data\":{\"id\":\"d80dca5e-c981-40e3-a6cb-06e0adf27ab4\",\"user_id\":\"52f13a18-34c7-416f-95bb-1d2c9331c9f6\",\"created\":\"2026-10-30T12:03:06.118Z\",\"file_name\":\"base\",\"source_filetype\":\"image:png\",\"width\":200,\"height\":150,\"expires_at\":null,\"delete_key\":\"lpItdFMUqrRiPIsQOLnpi2Ph5oSYJobI\"}}"
+    },
+    {
+      "index": 7,
+      "startOffsetMs": 54.638543,
+      "ok": true,
+      "status": 201,
+      "latencyMs": 193.25003800000002,
+      "id": "1126ead2-8a9c-48ea-8ea6-0ffaa4e8316d",
+      "body": "{\"success\":true,\"statusCode\":201,\"timestamp\":\"2026-10-30T12:03:06.159Z\",\"timeMs\":177,\"data\":{\"id\":\"1126ead2-8a9c-48ea-8ea6-0ffaa4e8316d\",\"user_id\":\"52f13a18-34c7-416f-95bb-1d2c9331c9f6\",\"created\":\"2026-10-30T12:03:06.155Z\",\"file_name\":\"base\",\"source_filetype\":\"image:png\",\"width\":200,\"height\":150,\"expires_at\":null,\"delete_key\":\"u8Z4l6ecIyDcHKzMQSNG5ISqWB2quboT\"}}"
+    },
+    {
+      "index": 8,
+      "startOffsetMs": 54.935451,
+      "ok": true,
+      "status": 201,
+      "latencyMs": 172.16555600000004,
+      "id": "abcc9746-fd34-4282-ba86-4ff1e789e279",
+      "body": "{\"success\":true,\"statusCode\":201,\"timestamp\":\"2026-10-30T12:03:06.137Z\",\"timeMs\":154,\"data\":{\"id\":\"abcc9746-fd34-4282-ba86-4ff1e789e279\",\"user_id\":\"52f13a18-34c7-416f-95bb-1d2c9331c9f6\",\"created\":\"2026-10-30T12:03:06.121Z\",\"file_name\":\"base\",\"source_filetype\":\"image:png\",\"width\":200,\"height\":150,\"expires_at\":null,\"delete_key\":\"4Ne23oaLshSf613RqrP7rhcYq4q1h5OF\"}}"
+    }
+  ],
+  "verify": {
+    "skipped": false,
+    "ok": true,
+    "width": 200,
+    "height": 150,
+    "channels": 4,
+    "responseBytes": 1061,
+    "contentType": "image/png",
+    "reason": "pixels identical to fixture"
+  },
+  "cleanup": {
+    "skipped": false,
+    "ok": true,
+    "deleted": 8,
+    "status": 201
+  }
+}
