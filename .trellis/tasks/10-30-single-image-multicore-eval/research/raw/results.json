@@ -1,0 +1,420 @@
+{
+  "env": {
+    "node": "v20.20.2",
+    "sharp": "0.35.5",
+    "vips": "8.18.7",
+    "libvips_threads_default": 16,
+    "cpus": 16,
+    "availableParallelism": 16,
+    "cpuModel": "12th Gen Intel(R) Core(TM) i7-12700",
+    "container_cpu_max_v2": "max 100000",
+    "container_cpu_quota_v1": null,
+    "container_cpuset": "0-15",
+    "memory_limit": "max"
+  },
+  "fixtures": {
+    "12mp.jpg": 9894992,
+    "12mp.png": 36066826,
+    "12mp.qoi": 47976454,
+    "24mp.jpg": 19776640,
+    "24mp.png": 72131563
+  },
+  "sections": {
+    "decode": {
+      "24mp.jpg c=1": {
+        "wall_ms": 195.97,
+        "cpu_ms": 199.22,
+        "ratio_cpu_wall": 1.02,
+        "wall_all": [
+          194.07,
+          197.63,
+          198.28,
+          195.97
+        ],
+        "cpu_all": [
+          197.11,
+          201.11,
+          201.54,
+          199.22
+        ]
+      },
+      "24mp.jpg c=4": {
+        "wall_ms": 187.71,
+        "cpu_ms": 213.95,
+        "ratio_cpu_wall": 1.14,
+        "wall_all": [
+          187.71,
+          187.05,
+          188.56,
+          188.55
+        ],
+        "cpu_all": [
+          213.42,
+          214.25,
+          215,
+          213.95
+        ]
+      },
+      "24mp.jpg c=16": {
+        "wall_ms": 199.16,
+        "cpu_ms": 232.16,
+        "ratio_cpu_wall": 1.17,
+        "wall_all": [
+          198.54,
+          201.97,
+          199.59,
+          199.16
+        ],
+        "cpu_all": [
+          232.16,
+          236.7,
+          235.46,
+          232.01
+        ]
+      },
+      "24mp.png c=1": {
+        "wall_ms": 70.07,
+        "cpu_ms": 72.04,
+        "ratio_cpu_wall": 1.03,
+        "wall_all": [
+          70.21,
+          70.24,
+          69.97,
+          70.07
+        ],
+        "cpu_all": [
+          72.28,
+          72.36,
+          72.04,
+          71.99
+        ]
+      },
+      "24mp.png c=4": {
+        "wall_ms": 56.65,
+        "cpu_ms": 81.03,
+        "ratio_cpu_wall": 1.43,
+        "wall_all": [
+          57.38,
+          56.65,
+          57.74,
+          56.16
+        ],
+        "cpu_all": [
+          81.75,
+          81.03,
+          83.17,
+          80.03
+        ]
+      },
+      "24mp.png c=16": {
+        "wall_ms": 67.5,
+        "cpu_ms": 96.91,
+        "ratio_cpu_wall": 1.44,
+        "wall_all": [
+          67.5,
+          66.13,
+          67.79,
+          68.05
+        ],
+        "cpu_all": [
+          96.91,
+          96.57,
+          97.76,
+          101.46
+        ]
+      },
+      "12mp.jpg c=1": {
+        "wall_ms": 101.41,
+        "cpu_ms": 103.92,
+        "ratio_cpu_wall": 1.02,
+        "wall_all": [
+          103.5,
+          102.28,
+          101.41,
+          101.36
+        ],
+        "cpu_all": [
+          106.16,
+          104.92,
+          103.81,
+          103.92
+        ]
+      },
+      "12mp.jpg c=4": {
+        "wall_ms": 97.91,
+        "cpu_ms": 112.02,
+        "ratio_cpu_wall": 1.14,
+        "wall_all": [
+          97.62,
+          97.91,
+          98.72,
+          99.54
+        ],
+        "cpu_all": [
+          112.02,
+          111.8,
+          113.23,
+          114.02
+        ]
+      },
+      "12mp.jpg c=16": {
+        "wall_ms": 105.51,
+        "cpu_ms": 125.44,
+        "ratio_cpu_wall": 1.19,
+        "wall_all": [
+          106.01,
+          106.04,
+          105.51,
+          105.23
+        ],
+        "cpu_all": [
+          125.44,
+          126.38,
+          125.39,
+          125.93
+        ]
+      }
+    },
+    "qoi_encode": {
+      "24mp.jpg-decoded-raw": {
+        "wall_ms": 297.02,
+        "cpu_ms": 299.14,
+        "ratio_cpu_wall": 1.01,
+        "wall_all": [
+          339.49,
+          295.24,
+          297.26,
+          297.02
+        ],
+        "cpu_all": [
+          341.48,
+          297.25,
+          299.41,
+          299.14
+        ]
+      },
+      "12mp.jpg-decoded-raw": {
+        "wall_ms": 149.99,
+        "cpu_ms": 151.24,
+        "ratio_cpu_wall": 1.01,
+        "wall_all": [
+          151.04,
+          149.34,
+          149.99,
+          150.49
+        ],
+        "cpu_all": [
+          152.1,
+          150.4,
+          151.24,
+          151.6
+        ]
+      }
+    },
+    "qoi_decode": {
+      "12mp.qoi": {
+        "wall_ms": 54.52,
+        "cpu_ms": 55.59,
+        "ratio_cpu_wall": 1.02,
+        "wall_all": [
+          54.12,
+          55.1,
+          54.52,
+          54.67
+        ],
+        "cpu_all": [
+          55.03,
+          56.11,
+          55.59,
+          55.81
+        ]
+      }
+    },
+    "full_chain": {
+      "24mp.jpg c=1": {
+        "wall_ms": 497.5,
+        "cpu_ms": 507.19,
+        "ratio_cpu_wall": 1.02,
+        "wall_all": [
+          497.5,
+          496.48,
+          497.64
+        ],
+        "cpu_all": [
+          507.31,
+          505.92,
+          507.19
+        ]
+      },
+      "24mp.jpg c=16": {
+        "wall_ms": 499.99,
+        "cpu_ms": 540.9,
+        "ratio_cpu_wall": 1.08,
+        "wall_all": [
+          499.99,
+          496.99,
+          507.91
+        ],
+        "cpu_all": [
+          540.9,
+          535.95,
+          548.04
+        ]
+      }
+    },
+    "libvips_encode": {
+      "webp q80 24mp raw c=1": {
+        "wall_ms": 2918.16,
+        "cpu_ms": 2926.8,
+        "ratio_cpu_wall": 1,
+        "wall_all": [
+          2907.78,
+          2960.63,
+          2918.16
+        ],
+        "cpu_all": [
+          2913.75,
+          2969.78,
+          2926.8
+        ]
+      },
+      "jpeg q90 24mp raw c=1": {
+        "wall_ms": 375.43,
+        "cpu_ms": 384.66,
+        "ratio_cpu_wall": 1.02,
+        "wall_all": [
+          376.13,
+          375.43,
+          374.37
+        ],
+        "cpu_all": [
+          384.66,
+          384.81,
+          383.2
+        ]
+      },
+      "resize1600+webp 24mp raw c=1": {
+        "wall_ms": 190.98,
+        "cpu_ms": 194.34,
+        "ratio_cpu_wall": 1.02,
+        "wall_all": [
+          190.59,
+          191.78,
+          190.98
+        ],
+        "cpu_all": [
+          194.34,
+          194.98,
+          194.33
+        ]
+      },
+      "webp q80 24mp raw c=4": {
+        "wall_ms": 2943.93,
+        "cpu_ms": 2973.82,
+        "ratio_cpu_wall": 1.01,
+        "wall_all": [
+          2943.93,
+          2944.53,
+          2905.89
+        ],
+        "cpu_all": [
+          2973.82,
+          2978.51,
+          2935.23
+        ]
+      },
+      "jpeg q90 24mp raw c=4": {
+        "wall_ms": 374.85,
+        "cpu_ms": 407.58,
+        "ratio_cpu_wall": 1.09,
+        "wall_all": [
+          381.36,
+          374.85,
+          374.67
+        ],
+        "cpu_all": [
+          415.26,
+          407.58,
+          406.25
+        ]
+      },
+      "resize1600+webp 24mp raw c=4": {
+        "wall_ms": 179.93,
+        "cpu_ms": 212.31,
+        "ratio_cpu_wall": 1.18,
+        "wall_all": [
+          179.93,
+          180.4,
+          178.82
+        ],
+        "cpu_all": [
+          212.31,
+          212.93,
+          210.49
+        ]
+      },
+      "webp q80 24mp raw c=16": {
+        "wall_ms": 2919.38,
+        "cpu_ms": 3031.46,
+        "ratio_cpu_wall": 1.04,
+        "wall_all": [
+          2911.63,
+          2945.62,
+          2919.38
+        ],
+        "cpu_all": [
+          3022.06,
+          3052.97,
+          3031.46
+        ]
+      },
+      "jpeg q90 24mp raw c=16": {
+        "wall_ms": 381.34,
+        "cpu_ms": 505.81,
+        "ratio_cpu_wall": 1.33,
+        "wall_all": [
+          378.49,
+          387.8,
+          381.34
+        ],
+        "cpu_all": [
+          504.76,
+          515.06,
+          505.81
+        ]
+      },
+      "resize1600+webp 24mp raw c=16": {
+        "wall_ms": 186.03,
+        "cpu_ms": 329.62,
+        "ratio_cpu_wall": 1.77,
+        "wall_all": [
+          186.03,
+          182.42,
+          186.37
+        ],
+        "cpu_all": [
+          329.81,
+          317.05,
+          329.62
+        ]
+      }
+    },
+    "qoi_chain": {
+      "12mp.qoi decode+encode": {
+        "wall_ms": 202.34,
+        "cpu_ms": 204.64,
+        "ratio_cpu_wall": 1.01,
+        "wall_all": [
+          200.14,
+          203.82,
+          202.34
+        ],
+        "cpu_all": [
+          203.37,
+          206.04,
+          204.64
+        ]
+      }
+    }
+  }
+}

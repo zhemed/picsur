@@ -37,6 +37,11 @@ This directory contains guidelines for frontend development. Fill in each file w
       多选、拖多张、粘贴多张时其余文件被静默丢弃。改上传交互前先读
       [Upload Concurrency](../../picsur-backend/backend/upload-concurrency.md)；要真正并发必须先补后端批量端点，
       否则只是把 N 次串行请求变成 N 次并发请求。
+- [ ] **单张图上传没有客户端图像计算，不要为「多核」引入 Worker**（2026-10-30 调查，`10-30-single-image-multicore-eval`）：
+      上传链路只有 `FormData` 组装加一次 XHR，无 `FileReader`、`createImageBitmap`、`OffscreenCanvas`、压缩或哈希；
+      唯一的前端图像计算是**展示阶段**的 QOI 解码，已在 1 个 Web Worker 内且逐像素顺序依赖，单张图拆不到多核。
+      Web Worker、HTTP/2 多路复用、多连接、分片上传对单文件上传都不产生 CPU 并行收益；
+      结论与数据见 [Upload Concurrency](../../picsur-backend/backend/upload-concurrency.md) 第 10 节。
 - [ ] **用户可见文案必须走 i18n**（#130 起）：模板里用 `{{ 'some.key' | translate }}`，
       TS 里用 `this.i18n.instant('some.key')`。**禁止硬编码英文/中文**。
       - 词典：`frontend/src/assets/i18n/en.json` 与 `zh.json`，**两边 key 必须一一对应**（新增文案要同时加）。

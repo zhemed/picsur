@@ -1,0 +1,361 @@
+{
+  "env": {
+    "node": "v20.20.2",
+    "sharp": "0.35.5",
+    "vips": "8.18.7",
+    "default_concurrency": 16,
+    "cpus": 16
+  },
+  "sections": {
+    "cache_check": {
+      "decode 24mp.jpg c=16 cache=true": {
+        "wall_ms": 202.63,
+        "cpu_ms": 237.71,
+        "ratio_cpu_wall": 1.17,
+        "wall_all": [
+          202.43,
+          202.65,
+          202.63
+        ]
+      },
+      "decode 24mp.jpg c=16 cache=false": {
+        "wall_ms": 202.78,
+        "cpu_ms": 236.89,
+        "ratio_cpu_wall": 1.17,
+        "wall_all": [
+          203.76,
+          202.78,
+          201.13
+        ]
+      }
+    },
+    "main_process": {
+      "fileTypeFromBuffer 24mp.jpg": {
+        "wall_ms": 0.1,
+        "cpu_ms": 0.11,
+        "ratio_cpu_wall": 1.12,
+        "wall_all": [
+          0.1,
+          0.09,
+          0.09,
+          0.1,
+          0.1
+        ]
+      },
+      "fileTypeFromBuffer 24mp.png": {
+        "wall_ms": 0.24,
+        "cpu_ms": 1.22,
+        "ratio_cpu_wall": 5.12,
+        "wall_all": [
+          0.28,
+          0.29,
+          0.21,
+          0.24,
+          0.18
+        ]
+      },
+      "Buffer copy 24mp.jpg 19.8MB": {
+        "wall_ms": 6.91,
+        "cpu_ms": 7.95,
+        "ratio_cpu_wall": 1.15,
+        "wall_all": [
+          6.25,
+          7.1,
+          6.87,
+          7.13,
+          6.91
+        ]
+      },
+      "sharp.metadata() 24mp.jpg c=1": {
+        "wall_ms": 0.37,
+        "cpu_ms": 1.29,
+        "ratio_cpu_wall": 3.51,
+        "wall_all": [
+          0.39,
+          0.41,
+          0.37,
+          0.32,
+          0.36
+        ]
+      },
+      "sharp.metadata() 24mp.jpg c=16": {
+        "wall_ms": 0.39,
+        "cpu_ms": 1.26,
+        "ratio_cpu_wall": 3.27,
+        "wall_all": [
+          0.33,
+          0.4,
+          0.34,
+          0.39,
+          0.44
+        ]
+      }
+    },
+    "decode_sweep": {
+      "24mp.jpg c=1": {
+        "wall_ms": 197.19,
+        "cpu_ms": 200.87,
+        "ratio_cpu_wall": 1.02,
+        "wall_all": [
+          198.17,
+          198.4,
+          196.39,
+          197.1,
+          197.19
+        ]
+      },
+      "24mp.jpg c=2": {
+        "wall_ms": 186.8,
+        "cpu_ms": 212.45,
+        "ratio_cpu_wall": 1.14,
+        "wall_all": [
+          186.92,
+          186.8,
+          185.72,
+          184.06,
+          186.89
+        ]
+      },
+      "24mp.jpg c=4": {
+        "wall_ms": 188.2,
+        "cpu_ms": 215.68,
+        "ratio_cpu_wall": 1.15,
+        "wall_all": [
+          188.87,
+          187.95,
+          189.66,
+          188.04,
+          188.2
+        ]
+      },
+      "24mp.jpg c=8": {
+        "wall_ms": 194.23,
+        "cpu_ms": 221.9,
+        "ratio_cpu_wall": 1.14,
+        "wall_all": [
+          199.53,
+          196.88,
+          194.23,
+          193.43,
+          191.87
+        ]
+      },
+      "24mp.jpg c=16": {
+        "wall_ms": 200.69,
+        "cpu_ms": 235.01,
+        "ratio_cpu_wall": 1.17,
+        "wall_all": [
+          199.72,
+          202.59,
+          204.47,
+          199.14,
+          200.69
+        ]
+      },
+      "24mp.png c=1": {
+        "wall_ms": 64.27,
+        "cpu_ms": 66.4,
+        "ratio_cpu_wall": 1.03,
+        "wall_all": [
+          64.27,
+          63.94,
+          63.58,
+          64.38,
+          64.41
+        ]
+      },
+      "24mp.png c=2": {
+        "wall_ms": 47.35,
+        "cpu_ms": 72.53,
+        "ratio_cpu_wall": 1.53,
+        "wall_all": [
+          47.35,
+          44.4,
+          45.53,
+          53.48,
+          50.13
+        ]
+      },
+      "24mp.png c=4": {
+        "wall_ms": 51.77,
+        "cpu_ms": 77.71,
+        "ratio_cpu_wall": 1.5,
+        "wall_all": [
+          51.84,
+          51.34,
+          51.77,
+          51.43,
+          52.89
+        ]
+      },
+      "24mp.png c=8": {
+        "wall_ms": 56.63,
+        "cpu_ms": 83.04,
+        "ratio_cpu_wall": 1.47,
+        "wall_all": [
+          56.6,
+          56.86,
+          55.25,
+          56.63,
+          59.85
+        ]
+      },
+      "24mp.png c=16": {
+        "wall_ms": 64.07,
+        "cpu_ms": 99.43,
+        "ratio_cpu_wall": 1.55,
+        "wall_all": [
+          65.6,
+          64.07,
+          71.58,
+          62.8,
+          60.61
+        ]
+      }
+    },
+    "full_chain": {
+      "24mp.jpg c=1": {
+        "wall_ms": 495.03,
+        "cpu_ms": 505.19,
+        "ratio_cpu_wall": 1.02,
+        "wall_all": [
+          502.95,
+          495.03,
+          491.61
+        ]
+      },
+      "24mp.jpg c=16": {
+        "wall_ms": 503.76,
+        "cpu_ms": 544.5,
+        "ratio_cpu_wall": 1.08,
+        "wall_all": [
+          498.89,
+          526.85,
+          503.76
+        ]
+      },
+      "24mp.png c=1": {
+        "wall_ms": 357.92,
+        "cpu_ms": 367.04,
+        "ratio_cpu_wall": 1.03,
+        "wall_all": [
+          353.03,
+          357.92,
+          368.04
+        ]
+      },
+      "24mp.png c=16": {
+        "wall_ms": 356.4,
+        "cpu_ms": 397.94,
+        "ratio_cpu_wall": 1.12,
+        "wall_all": [
+          359.4,
+          355.01,
+          356.4
+        ]
+      },
+      "12mp.jpg c=1": {
+        "wall_ms": 251.05,
+        "cpu_ms": 254.17,
+        "ratio_cpu_wall": 1.01,
+        "wall_all": [
+          253.12,
+          251.05,
+          249.91
+        ]
+      },
+      "12mp.jpg c=16": {
+        "wall_ms": 254.86,
+        "cpu_ms": 275.62,
+        "ratio_cpu_wall": 1.08,
+        "wall_all": [
+          254.86,
+          253.77,
+          255.02
+        ]
+      }
+    },
+    "resize_scaling": {
+      "24mp raw -> 1600 raw c=1": {
+        "wall_ms": 28.61,
+        "cpu_ms": 30.59,
+        "ratio_cpu_wall": 1.07,
+        "wall_all": [
+          29.19,
+          28.61,
+          28.56
+        ]
+      },
+      "24mp raw -> 1600 raw c=2": {
+        "wall_ms": 16.31,
+        "cpu_ms": 32.79,
+        "ratio_cpu_wall": 2.01,
+        "wall_all": [
+          16.35,
+          16.31,
+          16.26
+        ]
+      },
+      "24mp raw -> 1600 raw c=4": {
+        "wall_ms": 15.48,
+        "cpu_ms": 46.58,
+        "ratio_cpu_wall": 3.01,
+        "wall_all": [
+          15.52,
+          15.48,
+          12.67
+        ]
+      },
+      "24mp raw -> 1600 raw c=8": {
+        "wall_ms": 18.78,
+        "cpu_ms": 80.46,
+        "ratio_cpu_wall": 4.28,
+        "wall_all": [
+          15.81,
+          18.78,
+          19.92
+        ]
+      },
+      "24mp raw -> 1600 raw c=16": {
+        "wall_ms": 22.75,
+        "cpu_ms": 135.64,
+        "ratio_cpu_wall": 5.96,
+        "wall_all": [
+          22.75,
+          22.82,
+          21.5
+        ]
+      },
+      "jpeg24 -> resize 1600 webp c=1": {
+        "wall_ms": 336.66,
+        "cpu_ms": 342.12,
+        "ratio_cpu_wall": 1.02,
+        "wall_all": [
+          334.83,
+          336.66,
+          337.93
+        ]
+      },
+      "jpeg24 -> resize 1600 webp c=4": {
+        "wall_ms": 337.63,
+        "cpu_ms": 355.86,
+        "ratio_cpu_wall": 1.05,
+        "wall_all": [
+          338.62,
+          337.63,
+          335.44
+        ]
+      },
+      "jpeg24 -> resize 1600 webp c=16": {
+        "wall_ms": 348.93,
+        "cpu_ms": 373.14,
+        "ratio_cpu_wall": 1.07,
+        "wall_all": [
+          348.51,
+          349.12,
+          348.93
+        ]
+      }
+    }
+  }
+}
