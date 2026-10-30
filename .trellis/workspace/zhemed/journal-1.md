@@ -938,3 +938,27 @@ zh-default 只改前端：picsur-img 增加 native 模式（原生 <img loading=
 ### Status
 
 [OK] **Completed**
+
+
+## Session 41: 上传并发调查：判定部分成立，前端串行上传是体感主因
+<!-- trellis-session: v=2 fp=bd44a8b4026aa626 -->
+
+**Date**: 2026-10-30
+**Task**: 上传并发调查：判定部分成立，前端串行上传是体感主因
+**Package**: picsur-shared
+**Branch**: `master`
+
+### Summary
+
+只读调查上传链路并发模型。结论：前端上传并发上限 1 且多选只传第一张；后端单进程事件循环并发受理、每次转换 fork 子进程可跨核，但单张图 QOI 编解码为原生同步单线程；主进程同步 JS 段与单实例部署是确认瓶颈。产出三份 research 报告并复核通过，新增 spec upload-concurrency.md，前端 spec 补上传清单。未压测。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `d4f7e32` | docs(spec): record upload concurrency model and frontend single-file upload [task:10-30-investigate-upload-concurrency] |
+| `a34b030` | docs(task): record the upload concurrency investigation [task:10-30-investigate-upload-concurrency] |
+
+### Status
+
+[OK] **Completed**
