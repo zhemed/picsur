@@ -962,3 +962,27 @@ zh-default 只改前端：picsur-img 增加 native 模式（原生 <img loading=
 ### Status
 
 [OK] **Completed**
+
+
+## Session 42: 上传并发调查收尾：文档漂移修复与转换 worker 池化
+<!-- trellis-session: v=2 fp=b3080e172c56a07c -->
+
+**Date**: 2026-10-30
+**Task**: 上传并发调查收尾：文档漂移修复与转换 worker 池化
+**Package**: picsur-shared
+**Branch**: `master`
+
+### Summary
+
+按用户授权完成两件独立交付：1) 修复 compose 退役后的文档漂移，改 build-and-deploy.md、.env.example、MAINTAINING、Dockerfile 注释、package.json 死脚本与 .vscode task；2) 把每次转换 fork 一个新子进程改为常驻 worker 池，同口径压测串行 p50 125.4ms 降到 13.6ms，并发 8 worker 峰值 8 收敛到 4，回归 38 项全绿，spec 已更新。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `708d59e` | docs(compose): retire compose references and fix stale deploy docs [task:10-30-fix-doc-drift-compose-retired] |
+| `0389ec2` | feat(backend): reuse conversion workers via a resident pool [task:10-30-upload-worker-pool-benchmark] |
+
+### Status
+
+[OK] **Completed**
