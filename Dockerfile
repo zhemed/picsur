@@ -162,8 +162,9 @@ WORKDIR /picsur
 #   * 应用只写数据库与 /tmp（上传内容存 Postgres，不落盘），所以不需要写 /picsur；
 #   * CMD 仍是 pnpm（为了注入 npm_package_version 给 /api/info），node 用户的 HOME=/home/node 可写。
 #   * ⚠️ 面板内一键升级需要访问宿主 docker.sock：socket 属于宿主 root:docker，容器里 uid 1000
-#     默认**没有**权限。要保留这个能力，compose 里用 `group_add` 把宿主 docker 组 GID 加进来
-#     （install.sh 会自动探测并写进受管 override；手工部署见 .env.example 的 PICSUR_DOCKER_GID）。
+#     默认**没有**权限。常规镜像不是部署路径（只作 all-in-one 的基底，all-in-one 里以 root 运行），
+#     手工跑常规镜像时才需要用 `docker run --group-add` 把宿主 docker 组 GID 加进来
+#     （GID 取值见 .env.example 的 PICSUR_DOCKER_GID）。
 #     不加也能跑：应用会检测到 socket 不可用，面板退化为显示可复制的升级命令。
 COPY --from=prod_deps --chown=node:node /picsur ./
 

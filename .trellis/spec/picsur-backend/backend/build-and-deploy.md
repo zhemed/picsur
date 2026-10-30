@@ -32,10 +32,11 @@ set -a
 set +a
 node backend/dist/main.js # 8080
 
-# 常驻部署（仓库根目录，自建镜像）
-docker compose up -d --build
-docker compose ps
-docker compose restart picsur # 验证重启恢复
+# 常驻部署（唯一路径：all-in-one 单容器，内嵌 PostgreSQL；命令以 README 为准）
+docker run -d --name picsur --restart always -p 8080:8080 -v ./data:/data \
+  -v /var/run/docker.sock:/var/run/docker.sock ghcr.io/zhemed/picsur:allinone
+docker ps --filter name=picsur        # 一个容器 Up（healthy）
+docker restart picsur                 # 验证重启恢复（数据在 ./data）
 ```
 
 **镜像契约**：`Dockerfile`（仓库根目录）必须满足
@@ -51,7 +52,7 @@ docker compose restart picsur # 验证重启恢复
 | 运行时                 | `PICSUR_PRODUCTION=true` + `PICSUR_SYNC_SCHEMA` 默认关（TypeORM 只跑 migrations）                                |
 | 运行用户               | 常规镜像 `USER node`（uid 1000，非 root）；应用只写数据库与 /tmp，`/picsur` 用 `--chown=node:node` 保证可读。**例外**：all-in-one 保持 root（initdb/chown /data + 自升级要访问宿主 docker.sock，理由写在 `Dockerfile.allinone` 注释里） |
 | 可复现性（2026-10-15） | 基础镜像锁 digest、apk 锁 `=版本`、libvips 源码包 `sha256sum -c`、全局 node-gyp/node-addon-api 锁版本；Alpine 发新 `-rN` 后构建会明确失败，用 `bash support/apk-versions.sh` 重新解析并同步 |
-| 面板自升级 + 非 root   | 常规镜像不是 root，光挂 `/var/run/docker.sock` 还不够：还要把宿主 docker 组的 GID 加进容器（compose `group_add` / `PICSUR_DOCKER_GID`），否则 socket 打不开、面板退化成显示升级命令 |
+| 面板自升级 + 非 root   | 常规镜像不是 root，光挂 `/var/run/docker.sock` 还不够：还要把宿主 docker 组的 GID 加进容器（`docker run --group-add` / `PICSUR_DOCKER_GID`），否则 socket 打不开、面板退化成显示升级命令。all-in-one 镜像是 root，不需要这一项 |
 | 构建阶段用户（不变量） | **需要写权限的构建阶段必须在 root 下执行**（pnpm / node-gyp / apk 都要写 `/usr/local` 与项目 `node_modules`），每个构建阶段显式写 `USER root`；**`USER` 只用于最终运行阶段**（`Dockerfile` 末尾 `USER node`）。2026-10-16 两次发布中断的根因就是构建阶段缺 exec 位：全局 pnpm 自带的 `node-gyp/gyp/gyp_main.py` 在 tarball 里是 0644，而 gyp 生成的 Makefile 在「自我再生」时会直接执行它 → `/bin/sh: … Permission denied`、`make Error 126`（偶发＝取决于 make 的时间戳判断）。修法：装完 pnpm / 装完依赖后用 `find … -path '*/node-gyp/gyp/*' -exec chmod +x` 补齐 exec 位，那几行**不要删** |
 
 ---
@@ -62,18 +63,18 @@ docker compose restart picsur # 验证重启恢复
 
 | Key                                              |   必填    | 默认                              | 说明                                                                                                                     |
 | ------------------------------------------------ | :-------: | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `PICSUR_DB_HOST/PORT/USERNAME/PASSWORD/DATABASE` | ✅(生产)  | `localhost` / `5432` / `picsur`×3 | compose 内用服务名 `picsur_postgres`                                                                                     |
+| `PICSUR_DB_HOST/PORT/USERNAME/PASSWORD/DATABASE` | ✅(生产)  | `localhost` / `5432` / `picsur`×3 | all-in-one 用容器内嵌 Postgres（默认 `127.0.0.1`）；本机开发也连 `127.0.0.1`；`picsur_postgres` 是已退役 compose 服务名  |
 | `PICSUR_HOST` / `PICSUR_PORT`                    |     —     | `0.0.0.0` / `8080`                | —                                                                                                                        |
 | `PICSUR_ADMIN_PASSWORD`                          |    ✅     | —                                 | 账号名固定 `admin`，这是初始口令                                                                                         |
 | `PICSUR_JWT_SECRET`                              | ✅(生产)  | 随机                              | 不固定会导致每次重启登录态失效                                                                                           |
 | `PICSUR_STATIC_FRONTEND_ROOT`                    |  镜像内   | `/picsur/frontend/dist`           | 前端产物目录                                                                                                             |
 | `PICSUR_PRODUCTION`                              | ✅(生产)  | `false`                           | 生产模式：影响日志级别/格式、`/api/info` 的 `production` 字段、内置账号（guest/admin）的初始化。取值按 `ParseBool`：`true/1/yes` 真、`false/0/no` 假、缺省假。**不再控制 schema 同步**（A-2 起拆成下面的独立开关；旧版 `main.ts` 用 `!== undefined`、配置服务用 `ParseBool`，`PICSUR_PRODUCTION=false` 会一半当真一半当假） |
-| `PICSUR_SYNC_SCHEMA`                             |     —     | `false`                           | **默认关**：是否让 TypeORM 按实体自动同步表结构。开启 = 启动时 ALTER 表结构以匹配实体（**可能删掉它认为多余的列/表**），只能用于本地开发或空库，跑在有数据的库上等于赌博；开启时启动日志会打 WARN。审计 A-2 起是显式开关（此前由 `!production` 推导）。`docker-compose.yml` 已透传 |
+| `PICSUR_SYNC_SCHEMA`                             |     —     | `false`                           | **默认关**：是否让 TypeORM 按实体自动同步表结构。开启 = 启动时 ALTER 表结构以匹配实体（**可能删掉它认为多余的列/表**），只能用于本地开发或空库，跑在有数据的库上等于赌博；开启时启动日志会打 WARN。审计 A-2 起是显式开关（此前由 `!production` 推导）。all-in-one 镜像不在 ENV 里设它，应用默认 `false`；要开用 `docker run -e PICSUR_SYNC_SCHEMA=true` |
 | `PICSUR_MAX_FILE_SIZE`                           |     —     | `128000000`                       | 上传字节上限                                                                                                             |
-| `PICSUR_MAX_IMAGE_PIXELS`                        |     —     | `268402689`                       | 图像**像素**上限（`w*h`，sharp 默认 `0x3FFF^2`）；超限上传返回 400 并回显该值，`0` = 不限制。2026-10-13 起（issue #107）。`docker-compose.yml` 已透传（**默认值写死成 268402689，别改成空值**：空串会被 `ParseInt` 解析成 0 = 不限制） |
-| `PICSUR_MAX_DERIVATIVES_PER_IMAGE`               |     —     | `100`                             | 每图最多缓存多少张派生图（转码结果）。**超限只影响落库**：图片仍照常返回给用户，只是不再写库（WARN 日志），用于限制数据库体积；`0`（或负数） = 不限制。审计 A-8 新增。`docker-compose.yml` 已透传 |
+| `PICSUR_MAX_IMAGE_PIXELS`                        |     —     | `268402689`                       | 图像**像素**上限（`w*h`，sharp 默认 `0x3FFF^2`）；超限上传返回 400 并回显该值，`0` = 不限制。2026-10-13 起（issue #107）。`Dockerfile.allinone` 不设这个 ENV，应用默认值同为 268402689（`.env.example` 里也写死这个值，**别传空值**：空串会被 `ParseInt` 解析成 0 = 不限制） |
+| `PICSUR_MAX_DERIVATIVES_PER_IMAGE`               |     —     | `100`                             | 每图最多缓存多少张派生图（转码结果）。**超限只影响落库**：图片仍照常返回给用户，只是不再写库（WARN 日志），用于限制数据库体积；`0`（或负数） = 不限制。审计 A-8 新增。all-in-one 不设这个 ENV，应用默认值同为 100；要改用 `docker run -e PICSUR_MAX_DERIVATIVES_PER_IMAGE=<值>` |
 | `PICSUR_UPDATE_CHECK` | ✅ 默认开 | `true` | 面板「关于」页的版本检测：只读 `api.github.com/repos/zhemed/picsur/tags`，缓存 1 小时、失败降级、不发任何实例数据；`false` 关闭时接口返回 `checkEnabled:false`（不是报错）。**显式检查会绕过缓存**（见 §14）。0.7.0 起 |
-| `PICSUR_ALLOW_SELF_UPDATE` | ⚠️ **默认开** | `true` | 面板内一键自升级。**真正的门槛是挂载**：`/var/run/docker.sock` 一旦挂进容器就等于把宿主 docker 的 root 权限交给面板（任意管理员都能起特权容器），只适合完全信任管理员的单机部署。`docker-compose.yml` 默认已挂 socket（要关：删挂载 + 设 `false`，此时按钮退化为显示可复制的升级命令）。可选：`PICSUR_UPDATE_{REPO,API_URL,IMAGE,TAG,TIMEOUT,COMMAND}`、`PICSUR_DOCKER_SOCKET`。**`PICSUR_UPDATE_TAG` 在 all-in-one 部署（tag 形如 `allinone`）会被忽略**：换版本 tag 会拉到入口不同的常规镜像，故只重拉当前 tag（`self-update.service.ts: resolveTarget`） |
+| `PICSUR_ALLOW_SELF_UPDATE` | ⚠️ **默认开** | `true` | 面板内一键自升级。**真正的门槛是挂载**：`/var/run/docker.sock` 一旦挂进容器就等于把宿主 docker 的 root 权限交给面板（任意管理员都能起特权容器），只适合完全信任管理员的单机部署。README 的 all-in-one 命令默认已挂 socket（要关：删挂载 + 设 `false`，此时按钮退化为显示可复制的升级命令）。可选：`PICSUR_UPDATE_{REPO,API_URL,IMAGE,TAG,TIMEOUT,COMMAND}`、`PICSUR_DOCKER_SOCKET`。**`PICSUR_UPDATE_TAG` 在 all-in-one 部署（tag 形如 `allinone`）会被忽略**：换版本 tag 会拉到入口不同的常规镜像，故只重拉当前 tag（`self-update.service.ts: resolveTarget`） |
 | `PICSUR_VERBOSE`                                 | ❌ 不要开 | `false`                           | **开了会把 JWT secret 与 DB 口令明文写进日志**                                                                           |
 | `PICSUR_TELEMETRY`                               |     —     | `true`                            | **纯装饰**：只影响启动日志里的一行提示，不控制是否出网                                                                   |
 
@@ -90,9 +91,10 @@ if (!(await this.usageConfig.getMetricsUrl())) return; // ② 端点为空 → �
 
 ### 3.2 常驻部署契约
 
-- `docker-compose.yml` 在**仓库根目录**：`.env` 才能被 compose 自动加载（compose 读的是 compose 文件所在目录的 `.env`）。
-- 口令类变量用 `${VAR:?}` 守卫：缺失时 compose 直接报错，不允许起出默认口令的实例。
-- `restart: unless-stopped`；数据卷 `picsur-data`（Postgres）。
+- 唯一部署路径是 **all-in-one 单容器**：`docker run ... ghcr.io/zhemed/picsur:allinone`（README 与 `docs/MAINTAINING.md` 是命令的权威来源）。`install.sh` 已在 `54fe809` 删除、`docker-compose.yml` 已在 `6fc28d9` 删除，均不再是部署路径。
+- 所有数据都在 `/data`（PGDATA + `allinone.env`）；宿主机数据目录挂到 `/data`（README 用 `./data`）。
+- 口令类变量缺失时**不报错**：`PICSUR_ADMIN_PASSWORD` / `PICSUR_JWT_SECRET` / `PICSUR_DB_PASSWORD` 由入口脚本首启自动生成、打印并写入 `/data/allinone.env`（0600），重启复用；`-e` 传入的值优先。
+- `--restart always`（README 命令）；镜像自带 HEALTHCHECK，探活的是容器内 `/api/info`。
 - `.env` 必须在 `.gitignore` 与 `.dockerignore` 里**同时**排除（后者决定密钥会不会进镜像层）。
 
 ---
@@ -120,7 +122,7 @@ if (!(await this.usageConfig.getMetricsUrl())) return; // ② 端点为空 → �
 | `frontend/custom-webpack.config.js` 保持 `.js` + ESM | ❌ Node ≥20.19 下 `require(esm)` 成功返回命名空间 → webpack `unknown property 'default'`。必须是 `.cjs` + `module.exports` |
 | `PICSUR_SYNC_SCHEMA=true` 跑在有数据的库上            | ❌ TypeORM 启动即按实体 ALTER（可能删列）；生产只跑 migration，这个开关默认关                                              |
 | `PICSUR_VERBOSE=true`                                | ⚠️ JWT secret / DB 口令明文入日志                                                                                          |
-| compose 缺 `PICSUR_ADMIN_PASSWORD`                   | ❌ compose 启动前直接报错（by design）                                                                                     |
+| all-in-one 未提供 `PICSUR_ADMIN_PASSWORD`            | ⚠️ 不报错：入口脚本自动生成随机口令并打印，写入 `/data/allinone.env`（0600）                                               |
 | `.env` 未进 `.dockerignore`                          | ❌ 密钥进入镜像层（`docker history` 可捞）                                                                                 |
 | 请求 `/i/<uuid>`（不带扩展名）                       | 200 + 品牌占位图 `notfound.png`（**不是原图，也不是 index.html**）                                                         |
 | 请求不存在的 `/i/<uuid>`（无扩展名）                 | 404 + 占位图 + `Cache-Control: no-store`                                                                                   |
@@ -132,11 +134,11 @@ if (!(await this.usageConfig.getMetricsUrl())) return; // ② 端点为空 → �
 
 ## 5. Good / Base / Bad Cases
 
-- **Good**：`docker compose up -d --build` → `docker compose ps` 两个容器 Up →
-  `curl /api/info` 200（`version` 与根 `package.json` 一致，当前 `"0.6.0"`）→ 上传/取回/删除通过 → `docker compose restart picsur` 后
+- **Good**：按 README 起 all-in-one 容器 → `docker ps` 一个容器 Up（healthy）→
+  `curl /api/info` 200（`version` 与根 `package.json` 一致，当前 `"0.10.7"`）→ 上传/取回/删除通过 → `docker restart picsur` 后
   数据仍在、服务自动恢复。
-- **Base**：本机开发形态 —— Postgres 用 `support/dev.docker-compose.yml`，后端 `node backend/dist/main.js`。
-  注意该 compose **没有 healthcheck**，就绪判断要用 `docker exec <c> pg_isready -U picsur -d picsur`。
+- **Base**：本机开发形态 —— Postgres 直连本机 `127.0.0.1:5432`（`picsur` 库/用户；`support/dev.docker-compose.yml` 已随 `db04c3b` 退役），
+  后端 `set -a; . ./.env; set +a; node backend/dist/main.js`。
 - **Bad**：① 在宿主 Node 22 上 `pnpm install`；② 直接 `FROM` 上游 stage1 镜像；
   ③ 把 Dockerfile 放进 `support/`（会被 `.dockerignore` 的 `support` 一行排除出构建上下文，改放仓库根目录）；
   ④ 以为 `PICSUR_TELEMETRY=false` 关掉了遥测（它只影响一行日志；真正的断链是 `ReportUrl` 为空）。
@@ -149,18 +151,18 @@ if (!(await this.usageConfig.getMetricsUrl())) return; // ② 端点为空 → �
 | -------- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | 构建     | 三包 `pnpm --filter <pkg> build`                                                               | `shared/dist/index.js`、`backend/dist/main.js`、`frontend/dist/index.html` 存在；exit 0                        |
 | 服务     | `curl -s -o /dev/null -w '%{http_code}' localhost:8080/api/info`                               | `200`，且 body 里 `production:true`                                                                            |
-| 迁移     | `docker exec picsur_postgres psql -U picsur -d picsur -tAc "select count(*) from migrations;"` | **`8`**（7 条基线 + `AddImageSourceFiletype`，2026-10-13 #128 引入），且 `e_user_backend` 里有 `admin`/`guest` |
+| 迁移     | `docker exec picsur psql -U picsur -d picsur -tAc "select count(*) from migrations;"`          | **`12`**（7 条基线 + 5 条后续迁移，2026-10-30 现网实测），且 `e_user_backend` 里有 `admin`/`guest`             |
 | 上传     | `POST /api/image/upload`（multipart 字段 `file`）                                              | `201`，返回 `data.id`（UUID）                                                                                  |
 | 取回     | `GET /i/<id>.png`                                                                              | `200` + `image/png`；与原始图片**像素一致**（字节不保证一致）                                                  |
 | 转码     | `GET /i/<id>.{qoi,webp,avif,jxl,jp2,heif}`                                                     | 全部 `200`（证明镜像里的自编译 libvips **并且** sharp 是源码构建的）                                           |
 | SPA 深链 | `curl -o /dev/null -w '%{http_code} %{content_type}' localhost:8080/some/spa/route`            | `200 text/html` —— `@nestjs/serve-static` ≥11 的 `fallthrough` 回归只有这条能抓到                              |
 | 删除     | `POST /api/image/delete` `{"ids":[...]}`                                                       | `201`，且三张表 `e_image_backend`/`e_image_derivative_backend`/`e_image_file_backend` 计数归零                 |
-| 持久化   | `docker compose restart picsur` 后再取原图                                                     | `200` 且内容一致                                                                                               |
+| 持久化   | `docker restart picsur` 后再取原图                                                             | `200` 且内容一致                                                                                               |
 | 密钥     | `git grep` 扫跟踪范围                                                                          | 无真实口令/secret；`.env`、`.run/` 不在 `git status` 视野                                                      |
 
 ### 6.1 CI 门禁（`.github/workflows/ci.yml`）
 
-push 到任意分支 / PR 触发，跑 4 步（**不构建、不发布镜像**；发布是另一条 `release-image.yml`）。
+push 到任意分支 / PR 触发，跑 4 步（**不构建、不发布镜像**；发布是本地 `bash support/release-local.sh`，见 §9）。
 **每一步的外部依赖都要写在 workflow 注释里**，改 CI 时同步更新本节 —— 判错时先看依赖，别先怀疑代码：
 
 | 步骤                  | 需要外网？                              | 需要浏览器？ | 失败时怎么判                                                                                                     |
@@ -255,11 +257,11 @@ pkill -x node # 或先 pgrep 拿 PID 再 kill <pid>
 ### 7.3 加环境变量
 
 ```bash
-# Wrong —— 只更新了 compose，忘了 .env.example 与文档
-#         下次别人部署时变量缺失，compose 直接报错
+# Wrong —— 只改了代码默认值，忘了 .env.example 与本文档
+#         下次部署时没人知道有这个变量，默认值也对不上
 
-# Correct —— 三处同步：.env.example（占位值）、docker-compose.yml（默认值/守卫）、
-#           本 spec 的第 3.1 节（契约表）
+# Correct —— 三处同步：.env.example（占位值）、Dockerfile.allinone（镜像内 ENV 默认值；
+#           没写进镜像的变量以应用默认值为准）、本 spec 的第 3.1 节（契约表）
 ```
 
 ---
@@ -370,7 +372,7 @@ pkill -x node # 或先 pgrep 拿 PID 再 kill <pid>
 | 许可                   | AGPL-3.0（`LICENSE` 不动）。README 保留上游出处声明 —— 这是**合规声明**，不是依赖                                                                                                                                                                                                                                                   |
 | 发布（提交）           | 提交默认 push 到 `origin`（见 `AGENTS.md`）                                                                                                                                                                                                                                                                                         |
 | 发布（镜像）           | **`support/release-local.sh` 本地构建并发布到 `ghcr.io/zhemed/picsur`**（2026-10-16 起 GitHub Actions 只保留 `ci.yml`，不再由 tag 触发构建；脚本本地构建并推送 `:<版本>`、`:v<版本>`、`:<主>.<次>`、`:latest`、`:allinone`，成功后自动打推 `v<版本>` tag；需要先 `docker login ghcr.io`）。发布后必须 `docker pull` 起一次隔离栈跑 `support/regression-image-api.sh`，基础 34 项、有数据库访问时 38 项，必须 0 failed（CI 绿 ≠ 镜像可用） |
-| 部署镜像来源           | `docker-compose.yml` 的 `image: ${PICSUR_IMAGE:-ghcr.io/zhemed/picsur:latest}`：默认拉发布镜像，`--build` 仍可本地构建；固定版本用 `PICSUR_IMAGE=ghcr.io/zhemed/picsur:0.6.0`                                                                                                                                                       |
+| 部署镜像来源           | **`ghcr.io/zhemed/picsur:allinone`** 是唯一部署镜像（内嵌 Postgres，数据在 `/data`）。`:<版本>` / `:latest` 是常规镜像，只作为 `Dockerfile.allinone` 的构建基底（`PICSUR_BASE_IMAGE`），不是部署路径；要钉版本：`docker build -f Dockerfile.allinone --build-arg PICSUR_BASE_IMAGE=ghcr.io/zhemed/picsur:v<版本> ...`（命令见 `Dockerfile.allinone` 头注释） |
 | 文档分工               | README 只讲"跑起来"（≤35 行），运维细节在 `docs/MAINTAINING.md`，可执行契约在本文件                                                                                                                                                                                                                                                 |
 | 允许出现上游字样的位置 | 仅 `LICENSE`、README 的出处声明、`.trellis/**` 历史记录；**其余一律清空**                                                                                                                                                                                                                                                           |
 
@@ -410,7 +412,7 @@ SVG 与其它格式不同：**按原始向量存为 master，绝不交给 sharp 
 （浏览器侧已知存量不阻断，见 §8.4 / §10）。
 若要减轻依赖，替代方案是换更轻的 DOM 实现（如 linkedom），但需重新验证净化行为。
 
-> 部署形态见 §12（all-in-one 单容器 / compose+install.sh）。
+> 部署形态见 §12（唯一路径：all-in-one 单容器）。
 
 **取回契约**：`/i/<id>.svg` 响应必须带
 `Content-Security-Policy: sandbox; default-src 'none'; … script-src 'none'` 与
@@ -424,20 +426,23 @@ SVG 与其它格式不同：**按原始向量存为 master，绝不交给 sharp 
 
 1. **改 `PICSUR_ADMIN_PASSWORD` 不会改已有 admin 的口令**。
    `UserDbModule.ensureUserExists()` 是 `if (exists) return;` —— 只在用户**不存在**时创建。
-2. **`PICSUR_JWT_SECRET` 只在首选项不存在时被采用**。运行期读的是数据库首选项
-   `e_sys_preference_backend` 里 `key='jwt_secret'` 的值（`JwtConfigService.getJwtSecret()`）。
-3. ⚠️ **`docker compose` 优先用 shell 环境变量，而不是 `.env` 文件**。
-   如果你先 `set -a; . ./.env; set +a`（把旧值导出到 shell），再改 `.env`，然后
+2. **`PICSUR_JWT_SECRET` 有值时每次启动都会写进本地首选项**：`LateConfigModule.ensureJwtDefaultsLoaded()`
+   在 env 有值时调用 `setPreference('jwt_secret', envSecret)` 覆盖；env 没值时才读/生成数据库首选项
+   `e_sys_preference_backend` 里 `key='jwt_secret'` 的值，运行期读的也是它（`JwtConfigService.getJwtSecret()`）。
+   注意方向：**是 env 覆盖库，不是库覆盖 env**（这与本节 2026-10-13 的旧记录相反，当前代码见 `late-config.module.ts:44-57`）。
+3. ⚠️（历史，compose 已退役）**`docker compose` 优先用 shell 环境变量，而不是 `.env` 文件**。
+   当时如果先 `set -a; . ./.env; set +a`（把旧值导出到 shell），再改 `.env`，然后
    `docker compose up -d --force-recreate` —— 容器拿到的仍是**shell 里的旧值**。
+   all-in-one 下的对应关系：`docker run -e` 传入的值 > `/data/allinone.env` 里的持久化值 > 应用/镜像默认值。
 
 ### 轮换步骤（实测可用）
 
 ```bash
 # 1) 换 JWT secret：面板里已经改不了它（'jwt_secret' 属固定项，API 会返回 400）。
 #    两条可用路径：
-#    a) 设 PICSUR_JWT_SECRET 并重启 —— LateConfigModule 在启动时用它覆盖首选项；
+#    a) 用 docker run -e PICSUR_JWT_SECRET=... 重建容器 —— LateConfigModule 在启动时用它覆盖首选项；
 #    b) 直接改库（改完要重启才生效）：
-docker exec -i <db 容器> psql -U picsur -d <库> \
+docker exec -i picsur psql -U picsur -d picsur \
   -c "UPDATE e_sys_preference_backend SET value='$(openssl rand -hex 32)' WHERE key='jwt_secret'"
 
 # 2) 换 admin 口令：走接口（需要 admin 的 user id 与当前 token）
@@ -451,8 +456,9 @@ curl -X POST localhost:8080/api/user/update -H "Authorization: Bearer $TOKEN" \
 #    用完 `docker exec picsur rm -f …` 删掉。
 printf '%s' "$NEW_PW" | docker exec -i -w /picsur/backend picsur node /picsur/backend/ < 临时脚本 > .cjs
 
-# 4) 把新值写回 .env，然后**清掉 shell 里的旧变量**再重建容器
-env -u PICSUR_ADMIN_PASSWORD -u PICSUR_JWT_SECRET docker compose up -d --force-recreate picsur
+# 4) 把新值写回 .env（本机开发）或 /data/allinone.env（all-in-one 持久化密钥），再重启容器
+docker restart picsur   # 入口脚本重新读取 /data/allinone.env；`-e` 传入的值优先
+#    注意：all-in-one 不读宿主 .env，只改 .env 对已运行的容器无效；要在 docker run 时用 -e 传
 
 # 5) 验证：新凭据 201，旧凭据失败，旧 token 失效（401/403）
 ```
@@ -465,14 +471,13 @@ env -u PICSUR_ADMIN_PASSWORD -u PICSUR_JWT_SECRET docker compose up -d --force-r
 
 ---
 
-## 12. 一键部署的两条路径（2026-10-13）
+## 12. 一键部署（唯一路径：all-in-one，2026-10-13）
 
 | 路径 | 什么时候用 | 一条命令 |
 |---|---|---|
-| **all-in-one**（单容器，内嵌 PostgreSQL 17） | 单机自用，要 Komari 那种"一条 docker run" | `docker run -d --name picsur --restart always -p 8080:8080 -v ./data:/data ghcr.io/zhemed/picsur:allinone` |
-| **compose + `install.sh`** | 生产/正式口径，独立 Postgres 容器 | `curl -fsSL https://raw.githubusercontent.com/zhemed/picsur/master/install.sh \| bash` |
+| **all-in-one**（单容器，内嵌 PostgreSQL 17） | 唯一部署方式：单机自用，一条 `docker run` | `docker run -d --name picsur --restart always -p 8080:8080 -v ./data:/data -v /var/run/docker.sock:/var/run/docker.sock ghcr.io/zhemed/picsur:allinone` |
 
-两者都发布在 `ghcr.io/zhemed/picsur`（`release-image.yml`：常规 tag + `:allinone`）。
+镜像由本地 `support/release-local.sh` 构建并推送（`:<版本>` / `:v<版本>` / `:<主>.<次>` / `:latest` / `:allinone`；2026-10-16 起 Actions 只跑 CI、不再发镜像，见 §9）。**compose + `install.sh` 路径已退役并从仓库删除**（`54fe809` 删 `install.sh`，`6fc28d9` 删 `docker-compose.yml`），不要再按旧文档执行。
 
 **all-in-one 的契约**
 - 数据全在 `/data`（PGDATA + `allinone.env`）；`PICSUR_ADMIN_PASSWORD`/`PICSUR_JWT_SECRET`
@@ -481,7 +486,7 @@ env -u PICSUR_ADMIN_PASSWORD -u PICSUR_JWT_SECRET docker compose up -d --force-r
 - 信号：tini 为 PID 1，SIGTERM 先停应用再 `pg_ctl -m fast stop`（`docker stop` 退出码 0）。
 - **局限（写进 README/手册）**：单副本（一个 `/data` 一个 postmaster）、必须 root、Postgres 默认参数、
   备份靠 `tar ./data`（别丢 `allinone.env`）。
-- 常规 `Dockerfile` 与 `docker-compose.yml` **不受影响**（all-in-one 只是额外变体）。
+- 常规 `Dockerfile` 仍是 all-in-one 的构建基底（`Dockerfile.allinone` 的 `PICSUR_BASE_IMAGE` 默认 `ghcr.io/zhemed/picsur:latest`）；`:版本` / `:latest` 常规镜像不是部署路径。
 
 **踩过的三个坑（改这个镜像前先看）**
 1. alpine 3.23 包名是 `postgresql17` 系列，且 **`postgresql17-contrib` 必需** —— uuid 主键要
@@ -493,9 +498,7 @@ env -u PICSUR_ADMIN_PASSWORD -u PICSUR_JWT_SECRET docker compose up -d --force-r
 
 **为什么必须挂 socket（与 Komari 的对比，2026-10-15 定）**：Komari 免 socket 升级是因为它是**单文件二进制**（`/app/komari`）——下载新文件 → 校验 → 自检 → `os.Rename` 覆盖自己 → 原地重执行（它自己的 `container-replace` 模式）；代价是容器一旦被重建就退回镜像里的版本。Picsur 是 Node + 一整棵树（`dist` + 含原生模块的 `node_modules` + 自编译 libvips），容器内自替换要每次下载数百 MB 覆盖自身，且会让「跑的内容 ≠ 镜像」，故不采用。我们的实现与 Komari 的 `docker-recreate` 模式一致：**应用持有 socket → 拉镜像 → helper 重建自身**。**决定：保持现状**（默认挂 socket、默认开启），不引入侧车更新器。
 
-**`install.sh` 的契约**：幂等（重跑=升级，不覆盖 `.env`/不重建卷）、`--dir/--port/--version/--admin-password`、
-缺 docker 或端口占用时**非零退出**、下载 compose 失败时回退脚本内置副本；端口与容器名通过安装目录内
-受管的 `docker-compose.override.yml`（`!override`，需 compose ≥ 2.24）覆盖，仓库里的 compose 不被改动。
+**`install.sh` / compose 的退役记录**：`54fe809` 删除 `install.sh` 与 `release-image.yml`，`6fc28d9` 删除 `docker-compose.yml` 与 `support/verify-published-image.sh`。旧的 `install.sh` 契约（幂等重跑=升级、`--dir/--port/--version/--admin-password`、缺 docker 或端口占用时非零退出、用受管的 `docker-compose.override.yml` 覆盖端口与容器名）随文件删除失效，**不要按旧文档执行**；部署与升级只走本节的 all-in-one 路径与 §13 的面板自升级。
 
 ---
 
@@ -569,8 +572,8 @@ curl -X POST localhost:8091/api/system/update/apply -H "Authorization: Bearer $T
 
 **非 root 镜像下的 socket 权限（2026-10-16，`zh-default` 真机演练暴露）**
 
-0.8.0 起常规镜像 `USER node`（uid 1000），而宿主 socket 是 `root:docker 0660`。app 容器靠 compose 的
-`group_add: <docker gid>` 拿到权限，**但 helper 与替换容器是 app 用 Docker API 自己建的，不会继承 compose 的 group_add** ——
+0.8.0 起常规镜像 `USER node`（uid 1000），而宿主 socket 是 `root:docker 0660`。app 容器靠编排层的
+`group_add: <docker gid>` 拿到权限（compose 时代即 compose 的 `group_add`；compose 退役后手工起常规镜像对应 `docker run --group-add`），**但 helper 与替换容器是 app 用 Docker API 自己建的，不会继承这个 group_add** ——
 于是 helper 一启动就 `EACCES`，旧代码还会把它误报成 `the old container is gone`，面板一直等到客户端超时才报错。
 
 修法（都在 `backend/src/managers/update/**`）：
@@ -591,9 +594,10 @@ helper: Config.User=node  HostConfig.GroupAdd=["998"]  → 日志 `uid=1000 gid=
 升级后的新容器: Config.User=node  GroupAdd=["998"]     → 下一次升级照旧成功
 ```
 
-**给 0.7.x → 0.8.x 用户的注意**：那一次升级是**老代码**在执行，它不会给替换容器补 gid。
-所以从 0.7.x 升上来后请再跑一次 `install.sh`（或 `docker compose up -d`），让 compose 的 `group_add` 落到新容器上；
+**给 0.7.x → 0.8.x 用户的注意（历史）**：那一次升级是**老代码**在执行，它不会给替换容器补 gid。
+当时从 0.7.x 升上来要再跑一次 `install.sh`（或 `docker compose up -d`），让 compose 的 `group_add` 落到新容器上；
 否则新容器里的面板会显示"升级命令"而不是按钮（`PICSUR_DOCKER_GID` 要等于 `stat -c %g /var/run/docker.sock`）。
+现在唯一部署路径是 all-in-one（容器内以 root 运行），不存在这个 GID 问题；`install.sh` / compose 已删除，这里的命令仅作历史记录。
 
 ---
 

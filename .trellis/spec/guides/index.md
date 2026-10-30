@@ -41,7 +41,7 @@ These guides help you **ask the right questions before coding**.
 
 ### When Touching Build / Deploy / Environment
 
-- [ ] 你要装依赖、构建、出镜像、改 compose 或 `.env`
+- [ ] 你要装依赖、构建、出镜像、改 all-in-one 部署参数或环境变量
 - [ ] 你要加一个环境变量（必须三处同步，见 spec）
 - [ ] 你在排查「本地能跑、镜像里不行」这类问题
 

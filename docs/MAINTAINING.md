@@ -31,7 +31,15 @@ docker run -d --name picsur --restart always \
     ghcr.io/zhemed/picsur:allinone
   ```
   数据库迁移随容器启动自动执行。
-- **固定版本**：把镜像换成 `ghcr.io/zhemed/picsur:vX.Y.Z`（每个版本都有 `:vX.Y.Z` 标签）。
+- **固定版本**：all-in-one 在 GHCR 上只有滚动的 `:allinone` 标签，没有版本化 all-in-one tag；要固定版本，
+  得把常规镜像的版本 tag 当基底自行重建 all-in-one（在仓库根目录执行）：
+  ```bash
+  docker build -f Dockerfile.allinone \
+    --build-arg PICSUR_BASE_IMAGE=ghcr.io/zhemed/picsur:vX.Y.Z \
+    -t picsur:allinone-fixed .
+  ```
+  再用 `docker run` 起本地这个 tag。不能直接把部署命令的镜像换成 `:vX.Y.Z` —— 那是常规镜像，
+  没有内嵌 Postgres，需要外置数据库，不是一条 `docker run` 的部署形态。
 
 ### 2.1 去角色化（v0.9.x）的升级与回滚
 
@@ -75,6 +83,25 @@ bash support/release-local.sh --dry-run
 - 依赖审计：`bash support/audit-prod.sh`（需要官方 registry）。
 - 镜像里 apk 版本是**锁死**的；Alpine 发新修订号导致构建失败时，跑 `bash support/apk-versions.sh`
   把新版本号同步进 Dockerfile。
+
+### 4.1 本地 dev 数据库
+
+本机开发连 `127.0.0.1:5432`，库名 / 用户名 / 口令都是 `picsur`。`support/dev.docker-compose.yml`
+已随 `db04c3b` 退役，现在直接用一条 `docker run` 起 Postgres 17：
+
+```bash
+docker run -d --name picsur-devdb --restart unless-stopped \
+  -p 5432:5432 \
+  -e POSTGRES_DB=picsur -e POSTGRES_USER=picsur -e POSTGRES_PASSWORD=picsur \
+  -v picsur-devdb-data:/var/lib/postgresql/data \
+  postgres:17-alpine
+```
+
+- 先看有没有已经在跑：`docker ps --filter name=picsur-devdb`；本机 5432 被别的 dev 库占用时
+  不要再起第二个，直接复用那个库或先停掉它。
+- 停 / 删：`docker stop picsur-devdb`；连数据一起删：`docker rm -f picsur-devdb && docker volume rm picsur-devdb-data`。
+- 连库：把 `.env.example` 复制成 `.env`（示例里 `PICSUR_DB_HOST` 已经是 `127.0.0.1`），再
+  `set -a; . ./.env; set +a; node backend/dist/main.js` 起后端。
 
 ## 5. 验收清单（每次发布后跑一遍）
 

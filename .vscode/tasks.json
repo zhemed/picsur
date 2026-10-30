@@ -55,7 +55,7 @@
     {
       "type": "shell",
       "label": "Start postgres",
-      "command": "pnpm devdb:start",
+      "command": "docker start picsur-devdb 2>/dev/null || docker run -d --name picsur-devdb --restart unless-stopped -p 5432:5432 -e POSTGRES_DB=picsur -e POSTGRES_USER=picsur -e POSTGRES_PASSWORD=picsur -v picsur-devdb-data:/var/lib/postgresql/data postgres:17-alpine",
       "options": {
         "cwd": "${cwd}",
         "shell": {

@@ -1,11 +1,12 @@
 # Picsur all-in-one 镜像：同一个容器里跑 Postgres 17 + Picsur 应用，/data 是唯一持久化目录。
 #
-#   docker run -d --name picsur --restart always -p 8080:8080 -v ./data:/data zhemed/picsur:allinone
+#   docker run -d --name picsur --restart always -p 8080:8080 -v ./data:/data ghcr.io/zhemed/picsur:allinone
 #
-# 与常规 `Dockerfile` / `docker-compose.yml` 的关系：
-#   * 本文件**不改动**常规镜像与 compose 的默认路径，二者并存（常规路径仍是正式部署方式）。
-#   * 基底直接复用常规镜像的最终阶段 —— 里面已经有 Node 20、自编译 libvips 8.18.7
-#     （HEIF / JXL / JP2 编解码）和三包产物，本文件只加 Postgres 与入口脚本。
+# 与常规 `Dockerfile` 的关系：
+#   * 唯一部署路径是本镜像（all-in-one 单容器）；compose / install.sh 已退役并从仓库删除。
+#   * 常规镜像不是独立部署路径，只作为本镜像的基底（`PICSUR_BASE_IMAGE`，见下方构建命令）——
+#     它的最终阶段里已经有 Node 20、自编译 libvips 8.18.7（HEIF / JXL / JP2 编解码）和三包产物，
+#     本文件只加 Postgres 与入口脚本。
 #
 # 构建（仓库根目录）：
 #   docker build -f Dockerfile.allinone -t zhemed/picsur:allinone .                     # 默认基于 ghcr 发布镜像
@@ -49,7 +50,7 @@ RUN apk add --no-cache postgresql17=17.11-r0 postgresql17-client=17.11-r0 \
 COPY support/allinone-entrypoint.sh /usr/local/bin/picsur-allinone-entrypoint
 RUN chmod 0755 /usr/local/bin/picsur-allinone-entrypoint
 
-# 与常规镜像/compose 一致的运行契约；DB 指向容器内的本地 Postgres
+# 与常规镜像一致的运行契约；DB 指向容器内的本地 Postgres
 ENV PICSUR_PRODUCTION=true \
     PICSUR_HOST=0.0.0.0 \
     PICSUR_PORT=8080 \

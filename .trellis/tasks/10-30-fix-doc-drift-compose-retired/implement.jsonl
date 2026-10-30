@@ -1,0 +1,3 @@
+{"file":".trellis/spec/picsur-backend/backend/build-and-deploy.md","reason":"待修目标文档：部署路径、环境变量三处同步、§12 部署方式的现状来源"}
+{"file":".trellis/spec/picsur-backend/backend/index.md","reason":"后端规范索引：Pre-Development Checklist 里的环境变量三处同步口径需要与修正后的 build-and-deploy.md 对齐"}
+{"file":".trellis/spec/picsur-backend/backend/image-api-contracts.md","reason":"确认文档中关于上传与图像路径的表述无需连带修改"}

@@ -3,14 +3,8 @@
   "version": "0.10.7",
   "license": "AGPL-3.0-or-later",
   "scripts": {
-    "devdb:start": "docker compose -f ./support/dev.docker-compose.yml up -d",
-    "devdb:stop": "docker compose -f ./support/dev.docker-compose.yml down",
-    "devdb:restart": "docker compose -f ./support/dev.docker-compose.yml restart",
-    "devdb:remove": "docker compose -f ./support/dev.docker-compose.yml down --volumes --remove-orphans",
     "build": "pnpm --filter picsur-shared build && pnpm --filter picsur-backend build && pnpm --filter picsur-frontend build",
-    "setversion": "./support/setversion.sh",
     "purge": "rm -rf ./node_modules",
-    "purge-all": "./support/purge-all.sh",
     "format": "prettier --write .",
     "lint": "eslint  ."
   },
