@@ -31,6 +31,12 @@ This directory contains guidelines for frontend development. Fill in each file w
 - [ ] 前端产物由 backend 托管（`PICSUR_STATIC_FRONTEND_ROOT`），构建产物路径必须是 `frontend/dist`。
 - [ ] 调 API 时路径看 [Image API Contracts](../../picsur-backend/backend/image-api-contracts.md)：
       `POST` 一律返回 **201**，图片直链必须带扩展名。
+- [ ] **上传并发上限是 1，且多选会丢文件**（2026-10-30 调查，`10-30-investigate-upload-concurrency`）：
+      `upload.component.html:3` 的 file input 没有 `multiple`，`processing.component.ts:35` 只上传
+      `state.imageFiles[0]`，批量 `UploadImages` 整段被注释且目标是并不存在的 `/api/image/upload/bulk`；
+      多选、拖多张、粘贴多张时其余文件被静默丢弃。改上传交互前先读
+      [Upload Concurrency](../../picsur-backend/backend/upload-concurrency.md)；要真正并发必须先补后端批量端点，
+      否则只是把 N 次串行请求变成 N 次并发请求。
 - [ ] **用户可见文案必须走 i18n**（#130 起）：模板里用 `{{ 'some.key' | translate }}`，
       TS 里用 `this.i18n.instant('some.key')`。**禁止硬编码英文/中文**。
       - 词典：`frontend/src/assets/i18n/en.json` 与 `zh.json`，**两边 key 必须一一对应**（新增文案要同时加）。

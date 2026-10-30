@@ -16,6 +16,7 @@ This directory contains guidelines for backend development. Fill in each file wi
 |-------|-------------|--------|
 | [Build & Deploy](./build-and-deploy.md) | 工具链（Node 20 / pnpm 9.6.0）、三包构建、Docker 镜像、compose、环境变量契约 | ✅ 已填 |
 | [Image API Contracts](./image-api-contracts.md) | 图像 HTTP 接口：路径、请求/响应字段、状态码、错误矩阵 | ✅ 已填 |
+| [Upload Concurrency](./upload-concurrency.md) | 上传链路并发模型：单进程事件循环、每次转换 fork 子进程、QOI 单线程编解码、前端并发上限 1、瓶颈与验证口径 | ✅ 已填（10-30 调查） |
 | [Directory Structure](./directory-structure.md) | Module organization and file layout | To fill |
 | [Database Guidelines](./database-guidelines.md) | ORM patterns, queries, migrations | To fill |
 | [Error Handling](./error-handling.md) | Error types, handling strategies | To fill |
@@ -30,7 +31,10 @@ This directory contains guidelines for backend development. Fill in each file wi
 
 - [ ] 涉及装依赖/构建 → 先读 [Build & Deploy](./build-and-deploy.md)：**必须 Node 20 + pnpm 9.6.0**。
 - [ ] 涉及图像接口 → 先读 [Image API Contracts](./image-api-contracts.md)：路径与状态码都不符合直觉。
-- [ ] 动到环境变量 → 三处同步：`.env.example`、`docker-compose.yml`、`build-and-deploy.md` §3.1。
+- [ ] 涉及上传/转码/worker/性能 → 先读 [Upload Concurrency](./upload-concurrency.md)：单张图处理基本单核，
+      多核并行只来自多请求各 fork 一个子进程；前端上传并发上限是 1。
+- [ ] 动到环境变量 → 三处同步：`.env.example`、all-in-one 的 `Dockerfile.allinone` 默认值、`build-and-deploy.md` §3.1。
+      compose 部署已退役（`6fc28d9` 删除 `docker-compose.yml`），旧文档里出现 compose 的地方按此为准。
 - [ ] 动到数据库实体/查询 → 生产必须 `PICSUR_PRODUCTION=true`，否则 TypeORM 会 `synchronize` 直改 schema。
 - [ ] 要打日志 → **不要开 `PICSUR_VERBOSE`**（会明文打印 JWT secret 与 DB 口令）。
 - [ ] 要出网 → 本仓库**已断掉遥测**：`ReportUrl` 编译期为空（`config.static.ts`），
