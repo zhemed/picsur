@@ -1,4 +1,0 @@
-{"file":".trellis/spec/picsur-backend/backend/index.md","reason":"后端规范索引与 Pre-Development Checklist，确认调查涉及的环境与构建约束"}
-{"file":".trellis/spec/picsur-backend/backend/image-api-contracts.md","reason":"图像 HTTP 接口契约：上传路径、请求字段、状态码，用于定位上传入口"}
-{"file":".trellis/spec/picsur-backend/backend/build-and-deploy.md","reason":"构建与部署契约：Node 20、Docker 镜像、环境变量三处同步，用于运行时与部署层调查"}
-{"file":".trellis/spec/picsur-frontend/frontend/index.md","reason":"前端规范索引，前端上传行为调查的约定参考"}

@@ -1,8 +1,8 @@
 {
-  "id": "investigate-upload-concurrency",
-  "name": "investigate-upload-concurrency",
-  "title": "调查上传图片逻辑是否单线程串行",
-  "description": "用户怀疑图片上传逻辑是单核串行运行，需要只读调查上传链路的并发模型：HTTP 入口、队列/worker、CPU 密集处理、DB 写入、事件循环阻塞点。",
+  "id": "finish-bookkeeping-commits",
+  "name": "finish-bookkeeping-commits",
+  "title": "收尾提交：完成归档与 journal 的 git 提交并推送",
+  "description": "归档与 add_session 的 auto-commit 因缺任务锚点被全局钩子拒绝，需要补提交并推送；不改任何产物内容。",
   "status": "in_progress",
   "dev_type": null,
   "scope": null,
