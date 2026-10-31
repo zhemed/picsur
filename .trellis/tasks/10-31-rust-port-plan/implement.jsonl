@@ -1,0 +1,25 @@
+{"file": ".trellis/spec/picsur-backend/backend/index.md", "reason": "picsur-backend 后端规范入口（构建、错误、日志、并发与质量清单）"}
+{"file": ".trellis/spec/picsur-backend/backend/image-api-contracts.md", "reason": "HTTP 契约实测基线：信封、状态码、响应头与 34 项回归口径"}
+{"file": ".trellis/spec/picsur-backend/backend/build-and-deploy.md", "reason": "构建、部署、升级、备份与回滚契约，Rust 镜像必须对齐"}
+{"file": ".trellis/spec/picsur-backend/backend/upload-concurrency.md", "reason": "转码并发、worker 池与内存预算的既有实测结论"}
+{"file": ".trellis/spec/picsur-backend/backend/database-guidelines.md", "reason": "数据库 schema 与迁移规范，bytea 存储与账本约束"}
+{"file": ".trellis/spec/picsur-backend/backend/error-handling.md", "reason": "错误类型 FT 与状态码映射规范"}
+{"file": ".trellis/spec/picsur-backend/backend/logging-guidelines.md", "reason": "日志最低保留与脱敏规则，verbose 不得复制泄密行为"}
+{"file": ".trellis/spec/picsur-backend/backend/quality-guidelines.md", "reason": "后端质量门禁与检查清单"}
+{"file": ".trellis/spec/picsur-frontend/frontend/index.md", "reason": "前端规范入口：i18n、探针与验收清单"}
+{"file": ".trellis/spec/picsur-shared/backend/index.md", "reason": "共享包契约规范入口，DTO 与错误信封来源"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "跨层思考指南：前后端契约与数据流一致性"}
+{"file": ".trellis/tasks/10-31-rust-port-plan/research/01-api-inventory.md", "reason": "API 全量清单与信封细节"}
+{"file": ".trellis/tasks/10-31-rust-port-plan/research/01-data-layer.md", "reason": "数据层：7 实体 9 物理表 12 迁移、bytea 与分页语义"}
+{"file": ".trellis/tasks/10-31-rust-port-plan/research/01-auth.md", "reason": "鉴权与权限矩阵、bcrypt 与 JWT 口径"}
+{"file": ".trellis/tasks/10-31-rust-port-plan/research/01-image-pipeline.md", "reason": "图片链路全细节：主文件策略、缓存键、限额"}
+{"file": ".trellis/tasks/10-31-rust-port-plan/research/01-config.md", "reason": "配置项与环境变量逐项对等清单"}
+{"file": ".trellis/tasks/10-31-rust-port-plan/research/02-milestones.md", "reason": "迁移阶段划分与验收门"}
+{"file": ".trellis/tasks/10-31-rust-port-plan/research/02-risks.md", "reason": "迁移风险注册表与验证手段"}
+{"file": ".trellis/tasks/10-31-rust-port-plan/research/02-migration-strategy.md", "reason": "灰度策略与启动副作用单属主设计"}
+{"file": ".trellis/tasks/10-31-rust-port-plan/research/02-web-framework.md", "reason": "Rust Web 框架与 HTTP 层选型依据"}
+{"file": ".trellis/tasks/10-31-rust-port-plan/research/02-image-processing.md", "reason": "图片引擎选型与逐格式缺口"}
+{"file": ".trellis/tasks/10-31-rust-port-plan/research/02-frontend-rust.md", "reason": "Rust 前端选型、M2 复刻路径、i18n 与 WASM 验收"}
+{"file": ".trellis/tasks/10-31-rust-port-plan/research/02-data-layer.md", "reason": "数据层选型与迁移账本兼容方案"}
+{"file": ".trellis/tasks/10-31-rust-port-plan/research/02-auth.md", "reason": "JWT 与 bcrypt 兼容策略与权限矩阵"}
+{"file": ".trellis/tasks/10-31-rust-port-plan/research/01-frontend-contract.md", "reason": "前端调用点与静态托管契约"}

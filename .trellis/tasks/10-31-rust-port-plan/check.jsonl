@@ -1,0 +1,11 @@
+{"file": ".trellis/spec/picsur-backend/backend/index.md", "reason": "后端规范入口的质量检查清单"}
+{"file": ".trellis/spec/picsur-backend/backend/image-api-contracts.md", "reason": "HTTP 契约断言基线，检查响应头与状态码"}
+{"file": ".trellis/spec/picsur-backend/backend/build-and-deploy.md", "reason": "部署与回滚契约检查"}
+{"file": ".trellis/spec/picsur-backend/backend/error-handling.md", "reason": "错误映射与状态码检查"}
+{"file": ".trellis/spec/picsur-backend/backend/upload-concurrency.md", "reason": "转码并发与内存预算检查"}
+{"file": ".trellis/spec/picsur-backend/backend/quality-guidelines.md", "reason": "质量门禁与验收命令"}
+{"file": ".trellis/spec/picsur-frontend/frontend/index.md", "reason": "前端 i18n 与探针验收清单"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "跨层一致性检查指南"}
+{"file": ".trellis/tasks/10-31-rust-port-plan/research/02-risks.md", "reason": "迁移风险清单，逐项核对验证手段"}
+{"file": ".trellis/tasks/10-31-rust-port-plan/research/02-milestones.md", "reason": "验收门与证据要求"}
+{"file": ".trellis/tasks/10-31-rust-port-plan/research/02-frontend-rust.md", "reason": "前端复刻验收基准与探针口径"}
