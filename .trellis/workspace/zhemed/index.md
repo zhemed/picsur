@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 43
-- **Last Active**: 2026-10-30
+- **Total Sessions**: 44
+- **Last Active**: 2026-10-31
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1011 | Active |
+| `journal-1.md` | ~1034 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 44 | 2026-10-31 | 规划 Picsur 全栈迁移到 Rust | `35a85f2` | `master` |
 | 43 | 2026-10-30 | 单图多核可行性调查：前后端当前都不能，QOI 分块是唯一有上限的路径 | `daf7eed` | `master` |
 | 42 | 2026-10-30 | 上传并发调查收尾：文档漂移修复与转换 worker 池化 | `708d59e`, `0389ec2` | `master` |
 | 41 | 2026-10-30 | 上传并发调查：判定部分成立，前端串行上传是体感主因 | `d4f7e32`, `a34b030` | `master` |

@@ -1009,3 +1009,26 @@ zh-default 只改前端：picsur-img 增加 native 模式（原生 <img loading=
 ### Status
 
 [OK] **Completed**
+
+
+## Session 44: 规划 Picsur 全栈迁移到 Rust
+<!-- trellis-session: v=2 fp=beaa10269186b6a3 -->
+
+**Date**: 2026-10-31
+**Task**: 规划 Picsur 全栈迁移到 Rust
+**Package**: picsur-shared
+**Branch**: `master`
+
+### Summary
+
+建立父任务 10-31-rust-port-plan 与 9 个子任务待办；完成现状调研 17 份、三件套 PRD/设计/执行计划、门禁审查两轮（7 项必须改全部关闭）、提交 69 个文件。父任务保持 in_progress 作为跟踪根，子任务未启动。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `35a85f2` | docs(task): plan the full-stack Rust migration with nine child tasks [task:10-31-rust-port-plan] |
+
+### Status
+
+[OK] **Completed**
