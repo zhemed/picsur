@@ -12,6 +12,7 @@ import { AutoUnsubscribe } from 'ngx-auto-unsubscribe-decorator';
 import { ImageFileType } from 'picsur-shared/dist/dto/mimes.dto';
 import { EImage } from 'picsur-shared/dist/entities/image.entity';
 import { HasFailed } from 'picsur-shared/dist/types/failable';
+import { IsVideoFiletypeIdentifier } from 'picsur-shared/dist/util/parse-mime';
 import {
   BehaviorSubject,
   Observable,
@@ -244,6 +245,18 @@ export class ImagesComponent implements OnInit, OnDestroy {
 
     this.thumbRequests.set(image.id, width);
     return this.buildThumbUrl(image, width);
+  }
+
+  /**
+   * Is this row a video?
+   *
+   * Videos have no thumbnail: the gallery must not ask the server for a WebP
+   * derivative it cannot produce. The check looks at `source_filetype` only
+   * (no schema change), every list row carries it, and the shared helper keeps
+   * the string test in one place.
+   */
+  public isVideo(image: EImage): boolean {
+    return IsVideoFiletypeIdentifier(image.source_filetype);
   }
 
   /** True when the API told us the original's pixel size. */

@@ -1,0 +1,14 @@
+{"file": ".trellis/spec/picsur-backend/backend/index.md", "reason": "后端规范入口与开发前检查清单"}
+{"file": ".trellis/spec/picsur-backend/backend/image-api-contracts.md", "reason": "图像 HTTP 契约基线，视频契约需在此扩展"}
+{"file": ".trellis/spec/picsur-backend/backend/build-and-deploy.md", "reason": "构建与部署契约，Node 20 与 pnpm 9.6 约束"}
+{"file": ".trellis/spec/picsur-backend/backend/database-guidelines.md", "reason": "数据库迁移与实体规范"}
+{"file": ".trellis/spec/picsur-backend/backend/error-handling.md", "reason": "错误类型 FT 与状态码映射，视频需 400 而非 500"}
+{"file": ".trellis/spec/picsur-backend/backend/quality-guidelines.md", "reason": "后端质量门禁"}
+{"file": ".trellis/spec/picsur-frontend/frontend/index.md", "reason": "前端规范入口：i18n 双词典与验收清单"}
+{"file": ".trellis/spec/picsur-shared/backend/index.md", "reason": "共享包规范入口，媒体类型契约改动"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "跨层一致性思考指南"}
+{"file": ".trellis/tasks/10-25-video-support-eval/research/backend.md", "reason": "前序评估：后端链路与 A/B 档结论"}
+{"file": ".trellis/tasks/10-25-video-support-eval/research/frontend.md", "reason": "前序评估：前端渲染与 i18n 现状"}
+{"file": ".trellis/tasks/10-25-video-support-eval/research/infra-security.md", "reason": "前序评估：部署限额与安全风险"}
+{"file": ".trellis/tasks/11-01-video-upload/research/01-implementation-brief.md", "reason": "本次实现就绪清单：后端改动与契约"}
+{"file": ".trellis/tasks/11-01-video-upload/research/01-frontend-i18n.md", "reason": "本次实现就绪清单：前端与 i18n"}

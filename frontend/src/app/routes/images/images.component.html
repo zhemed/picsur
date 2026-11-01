@@ -29,6 +29,7 @@
     <mat-card class="gallery-card" *ngFor="let image of images">
       <div class="gallery-thumb">
         <picsur-img
+          *ngIf="!isVideo(image)"
           class="fill"
           [class.fit-none]="isSmallThumb(image)"
           [native]="true"
@@ -38,6 +39,17 @@
           [attr.alt]="'images.uploadedByYouAlt' | translate"
         >
         </picsur-img>
+
+        <!--
+          A video has no still frame to show (there is no transcoding or poster
+          generation), so the card gets a placeholder instead of a broken image.
+          `data-media-kind` lets the layout probe (and any test) tell the two
+          kinds of card apart without relying on DOM shape.
+        -->
+        <div *ngIf="isVideo(image)" class="video-thumb" data-media-kind="video">
+          <span class="video-play-icon" aria-hidden="true"></span>
+          <span class="video-badge">{{ 'images.videoBadge' | translate }}</span>
+        </div>
       </div>
 
       <mat-card-header>

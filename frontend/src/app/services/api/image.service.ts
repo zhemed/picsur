@@ -16,7 +16,10 @@ import {
   ImageMetaResponse,
   ImageRequestParams,
 } from 'picsur-shared/dist/dto/api/image.dto';
-import { ImageLinks } from 'picsur-shared/dist/dto/image-links.class';
+import {
+  ImageLinks,
+  ImageMediaKind,
+} from 'picsur-shared/dist/dto/image-links.class';
 import { FileType2Ext } from 'picsur-shared/dist/dto/mimes.dto';
 import { EImage } from 'picsur-shared/dist/entities/image.entity';
 import { AsyncFailable } from 'picsur-shared/dist/types/failable';
@@ -179,9 +182,25 @@ export class ImageService {
   }
 
   // Use for user facing urls
-  public CreateImageLinks(imageURL: string, name?: string): ImageLinks {
+  public CreateImageLinks(
+    imageURL: string,
+    name?: string,
+    kind: ImageMediaKind = 'image',
+  ): ImageLinks {
     const fallbackName = this.i18n.instant('images.defaultAlt');
     const alt = name ?? fallbackName;
+
+    // A video is not a picture: an image embed of its URL shows a broken
+    // picture, so markdown gets a normal link and HTML a <video> element.
+    if (kind === 'video') {
+      return {
+        source: imageURL,
+        markdown: `[${this.escapeMarkdown(alt)}](${imageURL})`,
+        html: `<video controls playsinline src="${imageURL}"></video>`,
+        rst: imageURL,
+        bbcode: `[url]${imageURL}[/url]`,
+      };
+    }
 
     // The file name is user input, so it must not be able to break out of the
     // snippets that are offered for copy & paste.
@@ -246,8 +265,13 @@ export class ImageService {
     imageID: string,
     mime: string | null,
     name?: string,
+    kind: ImageMediaKind = 'image',
   ): ImageLinks {
-    return this.CreateImageLinks(this.GetImageURL(imageID, mime, true), name);
+    return this.CreateImageLinks(
+      this.GetImageURL(imageID, mime, true),
+      name,
+      kind,
+    );
   }
 
   private chunks<T>(arr: T[], size: number): T[][] {

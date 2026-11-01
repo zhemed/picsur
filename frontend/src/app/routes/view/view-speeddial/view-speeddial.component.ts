@@ -9,6 +9,7 @@ import { Permission } from 'picsur-shared/dist/dto/permissions.enum';
 import { EImage } from 'picsur-shared/dist/entities/image.entity';
 import { EUser } from 'picsur-shared/dist/entities/user.entity';
 import { HasFailed } from 'picsur-shared/dist/types/failable';
+import { IsVideoFiletypeIdentifier } from 'picsur-shared/dist/util/parse-mime';
 import { ImageService } from '../../../services/api/image.service';
 import { PermissionService } from '../../../services/api/permission.service';
 import { UserService } from '../../../services/api/user.service';
@@ -48,6 +49,15 @@ export class ViewSpeeddialComponent implements OnInit {
 
   public get user(): EUser | null {
     return this.metadata?.user ?? null;
+  }
+
+  /** Videos cannot be customized in this tier; see `customize()`. */
+  public get isVideo(): boolean {
+    if (this.metadata === null) return false;
+    return (
+      IsVideoFiletypeIdentifier(this.metadata.fileTypes.master) ||
+      IsVideoFiletypeIdentifier(this.metadata.image.source_filetype)
+    );
   }
 
   constructor(
@@ -98,6 +108,7 @@ export class ViewSpeeddialComponent implements OnInit {
 
     this.downloadService.downloadFile(
       this.imageService.GetImageURL(this.image?.id, this.selectedFormat),
+      this.image.file_name,
     );
   }
 
@@ -141,6 +152,10 @@ export class ViewSpeeddialComponent implements OnInit {
 
   async customize() {
     if (this.image === null) return;
+
+    // Guarding here as well as in the template: the speed dial can be opened by
+    // keyboard or a stale DOM, and a video has no conversion options at all.
+    if (this.isVideo) return;
 
     const options: CustomizeDialogData = {
       imageID: this.image.id,

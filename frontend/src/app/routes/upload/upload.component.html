@@ -1,6 +1,11 @@
 <div class="content-border">
   <my-dropzone *ngIf="canUpload">
-    <input type="file" fileInput [formControl]="fileControl" />
+    <input
+      type="file"
+      fileInput
+      [formControl]="fileControl"
+      [accept]="acceptedMimeTypes"
+    />
     <div class="centered">
       <h1>{{ 'upload.title' | translate }}</h1>
       <p>{{ 'upload.dropHint' | translate }}</p>

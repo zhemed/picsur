@@ -1,0 +1,7 @@
+{"file": ".trellis/spec/picsur-backend/backend/index.md", "reason": "后端规范入口的 Quality Check"}
+{"file": ".trellis/spec/picsur-backend/backend/image-api-contracts.md", "reason": "视频契约与状态码检查"}
+{"file": ".trellis/spec/picsur-backend/backend/error-handling.md", "reason": "错误映射检查：非白名单视频必须 4xx"}
+{"file": ".trellis/spec/picsur-backend/backend/database-guidelines.md", "reason": "数据库迁移可回滚检查"}
+{"file": ".trellis/spec/picsur-frontend/frontend/index.md", "reason": "前端 i18n 与探针验收清单"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "跨层一致性检查指南"}
+{"file": ".trellis/tasks/11-01-video-upload/research/01-implementation-brief.md", "reason": "风险清单与已知限制"}

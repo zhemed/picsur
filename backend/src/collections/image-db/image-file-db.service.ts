@@ -70,6 +70,32 @@ export class ImageFileDBService {
     }
   }
 
+  /**
+   * File type and byte size of a stored file, without reading its data.
+   *
+   * `octet_length` is evaluated by Postgres, so HEAD requests can set
+   * `Content-Length` for a 128 MB video without moving the bytes into Node.
+   */
+  public async getFileInfo(
+    imageId: string,
+    variant: ImageEntryVariant,
+  ): AsyncFailable<{ filetype: string; size: number }> {
+    try {
+      const rows: { filetype: string; size: string | number }[] =
+        await this.imageFileRepo.query(
+          `SELECT filetype, octet_length(data) AS size
+             FROM e_image_file_backend
+            WHERE image_id = $1 AND variant = $2`,
+          [imageId, variant],
+        );
+
+      if (rows.length === 0) return Fail(FT.NotFound, 'Image not found');
+      return { filetype: rows[0].filetype, size: Number(rows[0].size) };
+    } catch (e) {
+      return Fail(FT.Database, e);
+    }
+  }
+
   public async migrateFile(
     imageId: string,
     sourceVariant: ImageEntryVariant,

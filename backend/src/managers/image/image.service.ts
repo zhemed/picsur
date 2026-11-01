@@ -9,6 +9,7 @@ import {
     FileType,
     ImageFileType,
     Mime2FileType,
+    SupportedFileTypeCategory,
 } from 'picsur-shared/dist/dto/mimes.dto';
 import { SysPreference } from 'picsur-shared/dist/dto/sys-preferences.enum';
 import { UsrPreference } from 'picsur-shared/dist/dto/usr-preferences.enum';
@@ -156,7 +157,10 @@ export class ImageManagerService {
     );
     if (HasFailed(imageFileEntity)) return imageFileEntity;
 
-    if (keepOriginal) {
+    // Videos are stored verbatim as the master, so keeping a separate original
+    // would write a second identical copy of a potentially 128 MB file. The
+    // "keep original" preference has nothing left to do for them.
+    if (keepOriginal && fileType.category !== SupportedFileTypeCategory.Video) {
       const originalFileEntity = await this.imageFilesService.setFile(
         imageEntity.id,
         ImageEntryVariant.ORIGINAL,
@@ -176,6 +180,46 @@ export class ImageManagerService {
   ): AsyncFailable<EImageDerivativeBackend> {
     const targetFileType = ParseFileType(fileType);
     if (HasFailed(targetFileType)) return targetFileType;
+
+    // A video is not an image: the master is the untouched upload, and there is
+    // no pipeline that could transcode it. Serving it back in its own container
+    // is the only supported request, and it needs neither a derivative nor the
+    // edit parameters (which are meaningless for a video).
+    if (targetFileType.category === SupportedFileTypeCategory.Video) {
+      // Check the master type before reading it: a 128 MB video (or any other
+      // master) must not be pulled into memory just to answer 400.
+      const masterFileType = await this.getMasterFileType(imageId);
+      if (HasFailed(masterFileType)) return masterFileType;
+
+      if (masterFileType.category !== SupportedFileTypeCategory.Video) {
+        return Fail(
+          FT.UsrValidation,
+          'Unsupported conversion',
+          'Cannot convert an image to a video format',
+        );
+      }
+
+      if (masterFileType.identifier !== targetFileType.identifier) {
+        // mp4 -> webm (and the other way around) would need ffmpeg, which this
+        // tier does not have. Say so instead of failing inside the converter.
+        return Fail(
+          FT.UsrValidation,
+          'Unsupported conversion',
+          'Video formats cannot be converted',
+        );
+      }
+
+      const master = await this.getMasterFile(imageId);
+      if (HasFailed(master)) return master;
+
+      // Returned as-is: putting this in the derivative table would duplicate
+      // the whole file just to hand back identical bytes.
+      return {
+        key: this.getConvertHash({ mime: fileType, ...options }),
+        filetype: masterFileType.identifier,
+        data: master.data,
+      } as EImageDerivativeBackend;
+    }
 
     const allow_editing = await this.sysPref.getBooleanPreference(
       SysPreference.AllowEditing,
@@ -229,6 +273,17 @@ export class ImageManagerService {
 
         const sourceFileType = ParseFileType(masterImage.filetype);
         if (HasFailed(sourceFileType)) return sourceFileType;
+
+        // A video master cannot be handed to sharp: there is no raster source
+        // to convert, so /i/<video>.webp is a bad request rather than an
+        // internal conversion error.
+        if (sourceFileType.category === SupportedFileTypeCategory.Video) {
+          return Fail(
+            FT.UsrValidation,
+            'Unsupported conversion',
+            'Videos can only be served in their own format',
+          );
+        }
 
         const startTime = Date.now();
         const convertResult = await this.convertService.convert(
@@ -323,6 +378,18 @@ export class ImageManagerService {
     return ParseFileType(mime['master']);
   }
 
+  /**
+   * File type plus byte size of the master, read without pulling the file.
+   *
+   * HEAD responses need `Content-Length`, and a video master can be 128 MB:
+   * loading it only to measure it would exhaust memory on every probe.
+   */
+  public async getMasterFileInfo(
+    imageId: string,
+  ): AsyncFailable<{ filetype: string; size: number }> {
+    return this.imageFilesService.getFileInfo(imageId, ImageEntryVariant.MASTER);
+  }
+
   public async getOriginal(imageId: string): AsyncFailable<EImageFileBackend> {
     return this.imageFilesService.getFile(imageId, ImageEntryVariant.ORIGINAL);
   }
@@ -394,7 +461,16 @@ export class ImageManagerService {
     }
     if (filetype === undefined) {
       const parsed = Mime2FileType(mime);
-      if (HasFailed(parsed)) return parsed;
+      // Recognised container (mov, mkv, pdf with an image-ish stream, ...) that
+      // this instance does not accept: that is the uploader's problem, so it
+      // must surface as a 400, not as the internal 500 this used to be.
+      if (HasFailed(parsed)) {
+        return Fail(
+          FT.UsrValidation,
+          `Unsupported upload format: ${mime}`,
+          parsed.getReason(),
+        );
+      }
       filetype = parsed;
     }
 

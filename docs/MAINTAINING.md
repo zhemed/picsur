@@ -13,8 +13,9 @@ docker run -d --name picsur --restart always \
 ```
 
 - 登录名固定 `admin`；首次启动的管理员口令打印在 `docker logs picsur`，并写入 `./data/allinone.env`（600）。
-- 所有数据（PostgreSQL + 图片文件）都在 `./data`。**备份 = 打包这个目录**：
+- 所有数据（PostgreSQL + 图片与视频文件）都在 `./data`。**备份 = 打包这个目录**：
   `tar czf picsur-data-$(date +%F).tgz ./data`（恢复 = 解包回原位后重启容器）。
+  视频按原片字节直接入库，会让 `./data` 与备份体积随上传量增长，见 §5.1。
 - 那行 `docker.sock` 挂载是**面板一键升级**的开关：它是把宿主 docker 的控制权交给面板，
   因此面板管理员等价于宿主 root。不想要就删掉这行 —— 面板会改为显示可复制的手动升级命令，
   其它功能不受影响。
@@ -71,10 +72,12 @@ bash support/release-local.sh --dry-run
 - 脚本会拒绝脏工作树、未推送提交、版本回退与重复发布 —— **不要重推同一个版本号**
   （面板比较的是版本号，重推同版本对已部署的实例不可见）。
 - 发布前自检：`bash support/audit-prod.sh`（后端/共享口径必须 0；浏览器侧应无 critical/high）、
-  `bash support/regression-image-api.sh <base-url> <admin-password>`（34 项接口/格式回归）。
+  `bash support/regression-image-api.sh <base-url> <admin-password>`（34 项接口/格式回归）、
+  `bash support/regression-video-api.sh <base-url> <admin-password>`（54 项视频上传/直链回归）。
   回归**夹具自给**：缺 `base.{png,jpg,webp,avif,jxl,jp2,heif,qoi}` / `big-900mp.png` 时脚本
   自动生成（本地 sharp 编不出 JXL/JP2 就换带完整 libvips 的容器，
   `PICSUR_FIXTURE_IMAGE`，默认 `ghcr.io/zhemed/picsur:allinone`）；docker 不可用会直接报错退出。
+  视频夹具（`make-video-fixtures.cjs`）只写容器头 + 确定性填充，不需要编码器也不需要 docker。
 - 发布后：按第 5 节用真实实例点一次面板升级验收。
 
 ## 4. 构建与依赖
@@ -108,10 +111,24 @@ docker run -d --name picsur-devdb --restart unless-stopped \
 1. 接口/格式回归（一条命令，夹具自动就位）：
    ```bash
    bash support/regression-image-api.sh <新实例> <管理员口令>   # → RESULT: 34 passed, 0 failed
+   bash support/regression-video-api.sh <新实例> <管理员口令>   # → RESULT: 55 passed, 0 failed
    ```
 2. 打开面板「关于」页：显示当前/最新版本、**不是**「正在检查更新…」或「未启用」；
 3. 若这次含自升级相关改动：在测试实例点一次「立即升级」，确认进度显示、成功自动刷新；
 4. 数据抽查：升级前后图片数量一致、任取一张图 `/i/<id>.png` 返回 200。
+5. 视频抽查（含视频支持的发布起）：上传一个 mp4，`/i/<id>.mp4` 返回 200 `video/mp4` 且字节一致；
+   图库显示 VIDEO 占位卡；详情页给出直链与同源下载，不出现坏图。
+
+### 5.1 视频存储开销（含视频支持的发布起）
+
+- 视频按**原片字节**存进 Postgres bytea（master = 原片，不额外存 original），上限沿用
+  `PICSUR_MAX_FILE_SIZE`（默认 128,000,000 字节）。图片与视频共用这个上限，没有新变量。
+- 开销：视频直接放大数据库与 `./data` 备份体积；上传与取回都是**整段读进内存**，
+  128 MB 文件单请求内存峰值约 2 到 3 倍文件体积，并发取视频会按并发数叠加。
+  部署侧需要评估，必要时把 `PICSUR_MAX_FILE_SIZE` 调小（`docker run -e`）。
+- A 档已知边界：**没有 Range/206**（浏览器与下载器只能整段获取，Safari 等场景体验受限）、
+  **没有页面内播放器**（详情页只给直链与下载）、**没有转码**（编码不兼容时只能下载后本地播放）、
+  **没有海报/时长**（图库是占位卡）。二期再评估。
 
 ## 6. 排障速查
 

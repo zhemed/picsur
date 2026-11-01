@@ -28,6 +28,8 @@ export class ImageProcessorService {
       return await this.processStill(image, filetype);
     } else if (filetype.category === SupportedFileTypeCategory.Animation) {
       return await this.processAnimation(image, filetype);
+    } else if (filetype.category === SupportedFileTypeCategory.Video) {
+      return this.processVideo(image, filetype);
     } else {
       return Fail(FT.SysValidation, 'Unsupported mime type');
     }
@@ -65,5 +67,22 @@ export class ImageProcessorService {
       lossless: true,
       effort: 0,
     });
+  }
+
+  /**
+   * Videos are stored exactly as uploaded.
+   *
+   * There is no video pipeline (no ffmpeg, no thumbnails, no transcoding), so
+   * the master file *is* the original bytes. Decoding them with sharp would
+   * fail and transcoding is out of scope for the upload-and-direct-link tier.
+   */
+  private async processVideo(
+    image: Buffer,
+    filetype: FileType,
+  ): AsyncFailable<ImageResult> {
+    return {
+      image,
+      filetype: filetype.identifier,
+    };
   }
 }

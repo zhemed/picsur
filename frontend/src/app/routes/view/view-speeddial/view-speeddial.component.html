@@ -13,6 +13,7 @@
     <mat-icon fontSet="material-icons-outlined"> share </mat-icon>
   </button>
   <button
+    *ngIf="!isVideo"
     mat-mini-fab
     [matTooltip]="'view.customizeTooltip' | translate"
     (click)="customize()"

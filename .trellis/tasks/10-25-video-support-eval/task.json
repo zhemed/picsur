@@ -18,7 +18,9 @@
   "commit": null,
   "pr_url": null,
   "subtasks": [],
-  "children": [],
+  "children": [
+    "11-01-video-upload"
+  ],
   "parent": null,
   "relatedFiles": [],
   "notes": "",

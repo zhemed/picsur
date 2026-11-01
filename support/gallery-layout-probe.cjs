@@ -55,6 +55,10 @@ function measure() {
   const cards = [...document.querySelectorAll('mat-card')].map((card) => {
     const thumb = card.querySelector('picsur-img canvas, picsur-img img');
     const thumbBox = card.querySelector('picsur-img');
+    // Video cards have no thumbnail on purpose (there is no poster frame):
+    // they must be recognised and excluded from the picture assertions instead
+    // of being reported as "unloaded".
+    const videoThumb = card.querySelector('[data-media-kind="video"]');
     const title = card.querySelector('mat-card-title');
     const subtitle = card.querySelector('mat-card-subtitle');
     let source = null;
@@ -87,6 +91,10 @@ function measure() {
 
     return {
       card: rect(card),
+      mediaKind: videoThumb ? 'video' : 'image',
+      hasVideoBadge: videoThumb
+        ? videoThumb.querySelector('.video-badge') !== null
+        : null,
       title: title ? title.textContent.trim() : null,
       titleBox: title ? rect(title) : null,
       subtitleBox: subtitle ? rect(subtitle) : null,
@@ -138,6 +146,11 @@ function measure() {
   const images = [
     ...document.querySelectorAll('picsur-img canvas, picsur-img img'),
   ];
+  // Only picture cards take part in the sharpness assertions; a video card has
+  // no decoded frame by design (that is what `data-media-kind` is for).
+  const imageCards = cards.filter((c) => c.mediaKind !== 'video');
+  const videoCards = cards.filter((c) => c.mediaKind === 'video');
+
   return {
     viewport: {
       w: window.innerWidth,
@@ -147,17 +160,21 @@ function measure() {
     cardCount: cards.length,
     cards,
     rowHeights,
-    unloaded: cards.filter((c) => !c.source || c.source.w === 0).length,
+    imageCards: imageCards.length,
+    videoCards: videoCards.length,
+    videoWithoutBadge: videoCards.filter((c) => c.hasVideoBadge !== true)
+      .length,
+    unloaded: imageCards.filter((c) => !c.source || c.source.w === 0).length,
     // "Upscaled" means the layout stretched a picture past its own pixels
     // (CSS scale > 1) — that is the blurry kind. A picture drawn 1:1 on a 2x
     // screen simply does not have the pixels the screen could show, which is
     // the source's limit, so it is counted separately.
-    upscaled: cards.filter((c) => (c.scale ?? 0) > 1.05).length,
-    upscaledBySource: cards.filter(
+    upscaled: imageCards.filter((c) => (c.scale ?? 0) > 1.05).length,
+    upscaledBySource: imageCards.filter(
       (c) => (c.upscale ?? 0) > 1.05 && (c.scale ?? 0) <= 1.05,
     ).length,
     maxScale:
-      Math.round(Math.max(0, ...cards.map((c) => c.upscale ?? 0)) * 1000) /
+      Math.round(Math.max(0, ...imageCards.map((c) => c.upscale ?? 0)) * 1000) /
       1000,
     overflowX: scrollWidth > window.innerWidth + 1,
     scrollWidth,
@@ -562,17 +579,18 @@ async function main() {
         result.unloaded > 0 ||
         result.overflowX ||
         result.smallTargets > 0 ||
+        result.videoWithoutBadge > 0 ||
         result.rowHeights.some((r) => r.cards > 1 && !r.equal) ||
         result.cardCount === 0;
       if (bad) failures += 1;
 
       report.push({ width, dpr, ...result });
       console.log(
-        `${bad ? 'FAIL' : 'ok  '} ${String(width).padStart(4)}px @${dpr}x cards=${result.cardCount} rows=${result.rowHeights
+        `${bad ? 'FAIL' : 'ok  '} ${String(width).padStart(4)}px @${dpr}x cards=${result.cardCount} (images=${result.imageCards} videos=${result.videoCards}) rows=${result.rowHeights
           .map((r) => `${r.cards}x${r.min}${r.equal ? '' : `-${r.max}✗`}`)
           .join(
             ' ',
-          )} upscaled=${result.upscaled} sourceLimited=${result.upscaledBySource} maxScale=${result.maxScale} unloaded=${result.unloaded} overflowX=${result.overflowX} smallTargets=${result.smallTargets}`,
+          )} upscaled=${result.upscaled} sourceLimited=${result.upscaledBySource} maxScale=${result.maxScale} unloaded=${result.unloaded} videoNoBadge=${result.videoWithoutBadge} overflowX=${result.overflowX} smallTargets=${result.smallTargets}`,
       );
       for (const card of result.cards.slice(0, 6)) {
         console.log(

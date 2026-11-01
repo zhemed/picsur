@@ -37,10 +37,19 @@ export class DownloadService {
     return () => ref.close();
   }
 
-  public async downloadFile(url: string) {
+  /**
+   * Download a file through XHR (with a progress dialog).
+   *
+   * `fileName` is the name the user knows the file by (the title); the real
+   * extension is derived from the served content type and appended when the
+   * caller's name has none. Without this the saved file was always called
+   * `image` or the bare UUID. Note that this buffers the whole file in memory:
+   * for large videos prefer the same-origin direct link anchor on the view page.
+   */
+  public async downloadFile(url: string, fileName?: string) {
     const request = this.api.getBuffer(url);
     const closeDialog = this.showDownloadDialog(
-      'image',
+      fileName ?? 'file',
       request.downloadProgress,
     );
 
@@ -51,11 +60,31 @@ export class DownloadService {
       return this.errorService.showFailure(file, this.logger);
     }
 
-    this.util.downloadBuffer(file.buffer, file.name, file.mimeType);
+    this.util.downloadBuffer(
+      file.buffer,
+      this.withExtension(fileName, file.name),
+      file.mimeType,
+    );
 
     closeDialog();
 
     this.errorService.info(this.i18n.instant('images.downloaded'));
+  }
+
+  /**
+   * Combine the caller's name with the extension the server actually served
+   * (`<id>.mp4`, `<id>.png`, ...). No name means "trust the served one".
+   */
+  private withExtension(fileName: string | undefined, servedName: string) {
+    if (fileName === undefined) return servedName;
+
+    const dot = servedName.lastIndexOf('.');
+    const ext = dot === -1 ? '' : servedName.substring(dot);
+
+    if (ext === '') return fileName;
+    if (fileName.toLowerCase().endsWith(ext.toLowerCase())) return fileName;
+
+    return fileName + ext;
   }
 
   public canShare(): boolean {

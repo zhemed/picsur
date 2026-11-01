@@ -11,6 +11,7 @@ import { ImageMetaResponse } from 'picsur-shared/dist/dto/api/image.dto';
 import { ImageLinks } from 'picsur-shared/dist/dto/image-links.class';
 import {
   AnimFileType,
+  FileType2Ext,
   ImageFileType,
   SupportedFileTypeCategory,
 } from 'picsur-shared/dist/dto/mimes.dto';
@@ -20,7 +21,10 @@ import { EUser } from 'picsur-shared/dist/entities/user.entity';
 
 import { HasFailed } from 'picsur-shared/dist/types/failable';
 import { UUIDRegex } from 'picsur-shared/dist/util/common-regex';
-import { ParseFileType } from 'picsur-shared/dist/util/parse-mime';
+import {
+  IsVideoFiletypeIdentifier,
+  ParseFileType,
+} from 'picsur-shared/dist/util/parse-mime';
 import { Subscription, timer } from 'rxjs';
 import { ImageService } from '../../services/api/image.service';
 import { Logger } from '../../services/logger/logger.service';
@@ -83,8 +87,54 @@ export class ViewComponent implements OnInit, OnDestroy {
     );
   }
 
+  /**
+   * Is this upload a video?
+   *
+   * A video is stored verbatim and cannot be previewed as a picture or
+   * transcoded, so every image oriented part of the page (preview, format
+   * dropdown, customize) has to branch on this. Detected from the stored
+   * filetype only - no extra column, the shared helper owns the prefix test.
+   */
+  public get isVideo(): boolean {
+    if (this.metadata === null) return false;
+    return (
+      IsVideoFiletypeIdentifier(this.metadata.fileTypes.master) ||
+      IsVideoFiletypeIdentifier(this.metadata.image.source_filetype)
+    );
+  }
+
+  /** Direct link to the video, always with its own extension. */
+  public get videoLink(): string {
+    if (this.metadata === null) return '';
+    return this.imageService.GetImageURL(
+      this.id,
+      this.metadata.fileTypes.master,
+    );
+  }
+
+  /**
+   * File name offered to the browser when downloading the video.
+   *
+   * The upload stripped the extension from `file_name`, so it has to be added
+   * back: a download without `.<ext>` is not recognised by the OS.
+   */
+  public get videoDownloadName(): string {
+    const baseName =
+      this.image?.file_name ?? this.i18n.instant('view.imageFallbackName');
+
+    if (this.metadata === null) return baseName;
+
+    const ext = FileType2Ext(this.metadata.fileTypes.master);
+    return HasFailed(ext) ? baseName : `${baseName}.${ext}`;
+  }
+
   public get previewLink(): string {
     if (this.metadata === null) return '';
+
+    // There is no picture to show for a video: the template swaps in the
+    // placeholder and the direct link instead of pulling the file into an
+    // image element that cannot decode it.
+    if (this.isVideo) return this.videoLink;
 
     // Get width of screen in pixels
     const width = window.innerWidth * window.devicePixelRatio;
@@ -104,17 +154,21 @@ export class ViewComponent implements OnInit, OnDestroy {
 
   private imageLinksCache: Record<string, ImageLinks> = {};
   public get imageLinks(): ImageLinks {
-    if (this.imageLinksCache[this.selectedFormat] !== undefined)
-      return this.imageLinksCache[this.selectedFormat];
-
+    const kind = this.isVideo ? 'video' : 'image';
     const format = this.selectedFormat;
+    const cacheKey = `${kind}:${format}`;
+
+    if (this.imageLinksCache[cacheKey] !== undefined)
+      return this.imageLinksCache[cacheKey];
+
     const links = this.imageService.CreateImageLinksFromID(
       this.id,
       this.getImageLinkFiletype(format),
       this.image?.file_name,
+      kind,
     );
 
-    this.imageLinksCache[format] = links;
+    this.imageLinksCache[cacheKey] = links;
     return links;
   }
 
@@ -160,10 +214,15 @@ export class ViewComponent implements OnInit, OnDestroy {
 
     // Populate default selected format
     {
-      // Uploads keep their original filetype in the default selection when that
-      // filetype is PNG: the stored master is always QOI, so without this an
-      // uploaded PNG would be shown as JPEG.
-      if (this.metadata.image.source_filetype === ImageFileType.PNG) {
+      // A video keeps its own container. Letting the image default (JPEG) win
+      // would make every copy field point at /i/<id>.jpg, which the backend
+      // correctly rejects as a cross-media conversion.
+      if (this.isVideo) {
+        this.selectedFormat = this.metadata.fileTypes.master;
+      } else if (this.metadata.image.source_filetype === ImageFileType.PNG) {
+        // Uploads keep their original filetype in the default selection when
+        // that filetype is PNG: the stored master is always QOI, so without
+        // this an uploaded PNG would be shown as JPEG.
         this.selectedFormat = ImageFileType.PNG;
       } else {
         let masterFiletype = ParseFileType(this.metadata.fileTypes.master);
@@ -203,6 +262,13 @@ export class ViewComponent implements OnInit, OnDestroy {
   }
 
   private updateFormatOptions() {
+    // Videos have no format list: the master is served as-is and any other
+    // format would be a 400. The template hides the dropdown on this branch.
+    if (this.isVideo) {
+      this.formatOptions = [];
+      return;
+    }
+
     let newOptions: {
       value: string;
       key: string;
@@ -221,6 +287,13 @@ export class ViewComponent implements OnInit, OnDestroy {
   }
 
   private getImageLinkFiletype(format: string): string | null {
+    // Video links must carry the video's own extension (mp4/webm). Without
+    // this the "original" selection would resolve to a link without extension
+    // and the image formats to a cross-media 400.
+    if (this.isVideo) {
+      return this.metadata?.fileTypes.master ?? null;
+    }
+
     if (format !== 'original') return format;
     if (this.metadata === null) return null;
 

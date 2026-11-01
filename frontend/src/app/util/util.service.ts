@@ -2,9 +2,11 @@ import { Injectable } from '@angular/core';
 import {
   FileType2Ext,
   ImageFileType,
+  SupportedFileTypeCategory,
   SupportedFileTypes,
 } from 'picsur-shared/dist/dto/mimes.dto';
 import { HasFailed } from 'picsur-shared/dist/types/failable';
+import { ParseFileType } from 'picsur-shared/dist/util/parse-mime';
 import { Logger } from '../services/logger/logger.service';
 
 @Injectable({
@@ -42,6 +44,14 @@ export class UtilService {
 
     newOptions.push(
       ...SupportedFileTypes.flatMap((mime) => {
+        const parsed = ParseFileType(mime);
+        if (HasFailed(parsed)) return [];
+
+        // Videos are never converted: they are served as the original upload
+        // only, so offering MP4/WEBM in the image format list would let a user
+        // pick a format the backend answers with 400.
+        if (parsed.category === SupportedFileTypeCategory.Video) return [];
+
         // SVG is not a transcode target: it is only downloadable as the
         // original when the upload itself was an SVG.
         if (mime === ImageFileType.SVG) return [];

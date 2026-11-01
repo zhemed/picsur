@@ -30,7 +30,32 @@
     </div>
 
     <div class="col-12 py-3">
-      <picsur-img class="uploadedimage" [src]="previewLink"></picsur-img>
+      <picsur-img
+        *ngIf="!isVideo"
+        class="uploadedimage"
+        [src]="previewLink"
+      ></picsur-img>
+
+      <!--
+        No player in this tier: a video is shown as a panel with its direct link
+        and a same-origin download anchor, so the page never renders a broken
+        image and never pulls the whole file into an <img>.
+      -->
+      <div *ngIf="isVideo" class="video-placeholder" data-media-kind="video">
+        <span class="video-placeholder-icon" aria-hidden="true"></span>
+        <h3>{{ 'view.videoNoPreviewTitle' | translate }}</h3>
+        <p>{{ 'view.videoNoPreviewDescription' | translate }}</p>
+        <a
+          mat-stroked-button
+          [href]="videoLink"
+          [attr.download]="videoDownloadName"
+          target="_blank"
+          rel="noopener"
+        >
+          <mat-icon fontSet="material-icons-outlined">download</mat-icon>
+          {{ 'common.actions.download' | translate }}
+        </a>
+      </div>
     </div>
 
     <div class="col-md-6 col-12">
@@ -40,7 +65,7 @@
       ></copy-field>
     </div>
 
-    <div class="col-md-6 col-12">
+    <div class="col-md-6 col-12" *ngIf="!isVideo">
       <mat-form-field appearance="outline" color="primary">
         <mat-label>{{ 'view.imageFormat' | translate }}</mat-label>
         <mat-select [(value)]="selectedFormat">
@@ -49,6 +74,10 @@
           </mat-option>
         </mat-select>
       </mat-form-field>
+    </div>
+
+    <div class="col-md-6 col-12" *ngIf="isVideo">
+      <p class="video-notice">{{ 'view.videoNotice' | translate }}</p>
     </div>
 
     <div class="col-12 mb-3">

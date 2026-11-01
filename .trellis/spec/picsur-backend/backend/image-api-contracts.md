@@ -18,7 +18,7 @@
 ```
 GET    /api/info                          # 服务信息（匿名）
 POST   /api/user/login                    # {"username","password"}
-POST   /api/image/upload                  # multipart, 字段名 file
+POST   /api/image/upload                  # multipart 单文件；字段名不校验（前端发 image，回归发 file）
 POST   /api/image/list                    # 列出自己的图片（分页；请求体 {count,page,user_id?}）
 POST   /api/image/list/all                # 列出当前用户全部图片（不分页，#115）
 POST   /api/image/update
@@ -26,7 +26,7 @@ POST   /api/image/delete                  # {"ids":[...]}
 POST   /api/image/delete/key
 GET    /api/image/delete/:id/:key         # 用 delete_key 匿名删除
 GET    /i/:id                             # 原图/占位图（见 §4）
-GET    /i/:id.:ext                        # 实时转码到 ext
+GET    /i/:id.:ext                        # 实时转码到 ext；视频只接受自身容器（§3.9）
 GET    /i/meta/:id
 POST   /api/pref/sys/:key                 # {"value": ...} 改系统首选项（需 admin）
 GET    /api/pref/sys  /  /api/pref/sys/:key
@@ -53,7 +53,7 @@ GET    /api/pref/sys  /  /api/pref/sys/:key
 
 ### 3.3 `POST /api/image/upload`
 
-- 请求：`multipart/form-data`，字段名 **`file`**；可选 `Authorization: Bearer <jwt>`
+- 请求：`multipart/form-data`，字段名**不校验**（后端 `@PostFiles(1)` 取第一个文件；前端发 `image`，回归脚本发 `file`，两者都能过）；可选 `Authorization: Bearer <jwt>`
 - 响应：`201` + `data`：
 
 | 字段 | 类型 | 说明 |
@@ -64,11 +64,12 @@ GET    /api/pref/sys  /  /api/pref/sys/:key
 | `file_name` | string | 上传文件名的**去扩展名**形式 |
 | `expires_at` | ISO 时间 \| null | null = 永不过期 |
 | `delete_key` | string \| null | 带权限时返回，用于匿名删除 |
-| `source_filetype` | string \| null | **上传时的真实格式**（如 `image:png` / `image:jpeg`），#128 起新增；升级前的旧行为 `null` |
+| `source_filetype` | string \| null | **上传时的真实格式**（如 `image:png` / `image:jpeg`，视频为 `video:mp4` / `video:webm`），#128 起新增；升级前的旧行为 `null` |
 
 - 默认存储格式为 **QOI**（无损）；能否保留原始文件取决于系统设置 `keep original`。
+- 视频（A 档）：master 就是上传原片，不走 sharp、不生成派生图；`width`/`height` 恒为 `null`；`keep_original` 对视频不产生第二份 original（语义见 §3.9）。
 - ⚠️ `source_filetype` 的用途是让**前端**默认选中「上传时的格式」（#128）：
-  **它不改变后端路由行为** —— `/i/<id>`（无扩展名）依然返回品牌占位图，这一点实测确认过。
+  **它不改变后端路由行为** —— 普通栅格图 `/i/<id>`（无扩展名）依然按「有无原图」分流，视频与 SVG 才回落 master，见 §3.4。
 
 ### 3.4 `GET /i/:id` 与 `/i/:id.:ext`
 
@@ -101,6 +102,39 @@ GET    /api/pref/sys  /  /api/pref/sys/:key
 - 响应：`201` + `{"data":{"results": EImage[], "total": number}}`
 - 与分页版 `list` 的差别：不返回 `page`/`pages`，一次给全量
 - 匿名调用 → **403**（实测）
+
+### 3.9 视频（A 档：只上传与直链，2026-11-01）
+
+范围边界：**没有 Range/206**、**没有页面内播放器**、**没有转码/海报/时长**。视频只承诺「能上传、能拿直链下载」。
+用户已接受这些限制（任务 `11-01-video-upload`）。实现细节与设计见该任务 `design.md`。
+
+**允许的容器**：`video/mp4`（`video:mp4`）与 `video/webm`（`video:webm`），白名单在 shared 的
+`VideoFileType` / `SupportedVideoFileTypes`。来自 `file-type` 的魔数识别，mov / mkv / avi / pdf 等
+**可识别但未支持**的格式在上传时拒绝。
+
+| 请求/场景 | 实测契约 |
+|---|---|
+| `POST /api/image/upload` mp4/webm | `201`，`data.source_filetype` 为 `video:mp4` / `video:webm`；`width`/`height` 为 `null`；权限、限流、multipart 上限与图片共用 |
+| 视频 master | **就是上传原片字节**，不走 sharp、不生成派生图；`keep_original` 打开也不额外存 second copy（master 已是原片） |
+| 上传 mov/mkv/avi 等 | **400** `{"type":"usrvalidation","message":"Unsupported upload format: video/quicktime"}`（修复前是 500） |
+| 超过 `PICSUR_MAX_FILE_SIZE` | **413**（与图片共用同一个 env，无新变量） |
+| `GET /i/<id>.mp4` / `.webm` | `200`，`Content-Type: video/mp4` / `video/webm`，`Content-Length` = 文件字节数，`X-Content-Type-Options: nosniff`，`Cache-Control: max-age=2592000`；**不发 `Accept-Ranges`**；字节与上传**完全一致**（无转码） |
+| `GET /i/<id>`（无扩展名） | `200` master 原片（视频与 SVG 一样回落 master，不受 `hasOriginal` 影响） |
+| `HEAD /i/<id>.mp4` | `200` + 同样的 `Content-Type` / `Content-Length`（长度用 `octet_length` 查，不读整段文件），无正文 |
+| `HEAD /i/<id>`（无扩展名） | 同 GET 解析出的 master 类型与长度 |
+| `HEAD /i/<id>.webm` 而 master 是 mp4 | **400**（与 GET 一致，避免 HEAD 200 / GET 400） |
+| `GET /i/<视频 id>.webp`、`.jpg` 等 | **400** `usrvalidation`：跨媒体转换不尝试 sharp |
+| `HEAD /i/<视频 id>.webp`（图片扩展名） | **400** `usrvalidation`（HEAD 与 GET 同语义，不能 HEAD 200 而 GET 400） |
+| `GET /i/<图片 id>.mp4` | **400** `usrvalidation`：图片不能转成视频容器 |
+| mp4 master 请求 `.webm`（或反向） | **400** `usrvalidation`：不做容器互转 |
+| `GET /i/<video id>.mp4?width=100` 等编辑参数 | **200 全量原片**：视频忽略编辑参数（不转码、不 400） |
+| 带 `Range: bytes=...` 请求 | **200 全量**，无 `Content-Range`/`206`（A 档忽略 Range） |
+| 删除后 GET/HEAD 视频直链 | **404** + 品牌占位图 + `Cache-Control: no-store`（与图片一致） |
+| `GET /i/meta/<id>` 视频 | `200` + `no-store`；`data.image.source_filetype` 与 `data.fileTypes.master` 均为 `video:` 前缀；`width`/`height` 为 `null` |
+| `POST /api/image/list`、`list/all` 视频行 | 行内 `source_filetype = 'video:...'`（列表无 `fileTypes`；前端用该前缀判定） |
+
+**零迁移识别方案**：不新增字段/实体/迁移，视频类别由 `source_filetype` 的 `video:` 前缀承载；
+shared 提供 `IsVideoFiletypeIdentifier()` 作为唯一判定点，前端图库、详情页、后端控制器共用。
 
 ### 3.5 `POST /api/image/delete`
 
@@ -145,9 +179,13 @@ GET    /api/pref/sys  /  /api/pref/sys/:key
 | 扩展名不在支持列表 | 400（`ImageFullIdPipe` 校验；具体列表见 `shared/src/util/common-regex.ts` / mime 枚举） |
 | 无 token 上传 | 201（匿名，落到 guest 用户），前提是 guest **有**上传权限：非 demo 实例只给 `GuestPermissions`（不能传），`PICSUR_DEMO=true` 的实例通过 `GuestDefaultPermissions(isDemo)` 额外给 `image-upload`（重启生效） |
 | 密码错误登录 | `success:false` + 4xx（实测未取具体码，未验证） |
-| 超过 `PICSUR_MAX_FILE_SIZE` | 4xx（未验证具体码） |
+| 超过 `PICSUR_MAX_FILE_SIZE` | **413** `payloadtoolarge`（图片与视频共用；实测视频超限 413） |
 | 超过像素上限的图片 | **400** `{"type":"usrvalidation","data":{"message":"Image is too large to process: <w>x<h> (<n> pixels) exceeds the maximum of <limit> pixels. Set PICSUR_MAX_IMAGE_PIXELS to raise the limit (0 disables it)."}}`（修复前是 500 `Worker closed`） |
 | 图片头读不出（损坏，或当前 libvips 无该格式解码器） | 400 `"Failed to read image metadata: <底层原因>"`；宿主的预编译 sharp 缺 JXL/JP2 解码器，同一文件在自编译 libvips 的镜像里上传正常 |
+| 上传可识别但未支持的容器（mov/mkv/avi 等） | **400** `usrvalidation`，message 以 `Unsupported upload format: <mime>` 开头（修复前是 500） |
+| 上传无法识别的字节 | 400 `usrvalidation`（既有行为，不变） |
+| `/i/<视频 id>.<非视频扩展名>` 或 `/i/<图片 id>.mp4` | **400** `usrvalidation`（跨媒体转换被明确拒绝，不动 sharp） |
+| 视频直链带 `Range` 头 | **200 全量**，没有 `206`/`Content-Range`/`Accept-Ranges`（A 档不实现 Range） |
 | `PICSUR_MAX_IMAGE_PIXELS` | 未设 = 268402689（sharp 默认 `0x3FFF^2`）；`0` = 不限制 |
 
 ---
@@ -172,6 +210,7 @@ GET    /api/pref/sys  /  /api/pref/sys/:key
 | 删除语义 | `GET/HEAD /i/<已删除 id>.<ext>` → **404** 且 `Cache-Control: no-store`；`GET /i/<未删除 id>.<ext>` → 200 且 `max-age=2592000`（两个方向都要断言，防止一刀切砍掉性能特性） |
 | 超像素上传 | → 400，且消息里同时出现实际像素数与上限值；之后 `/api/info` 仍 200（服务未崩） |
 | 7 种格式转码 | `qoi/webp/avif/jxl/jp2/heif/png` 全部 200；**JXL/JP2 必须在容器/自编译 libvips 环境跑**，宿主预编译 sharp 没有这两个解码器（见 `build-and-deploy.md` §8.3.4） |
+| 视频直链（A 档） | `support/regression-video-api.sh` 全绿：mp4/webm 上传、HEAD、带/不带扩展名直链字节一致、`Content-Length`、无 `Accept-Ranges`、meta 与列表 `video:` 前缀、跨格式 400、mov 400、超限 413、删除后 404 + `no-store`；视频范围与边界见 §3.9 |
 
 ### 6.1 可复现的回归脚本（必须自给自足）
 
@@ -183,6 +222,21 @@ GET    /api/pref/sys  /  /api/pref/sys/:key
 bash support/regression-image-api.sh http://localhost:8080 "$PICSUR_ADMIN_PASSWORD"
 # 期望 RESULT: 34 passed, 0 failed
 ```
+
+视频 A 档的独立冒烟（任务 `11-01-video-upload` 交付，`config/scripts` 夹具自给）：
+
+```bash
+# 默认实例；夹具缺失时自动调用 make-video-fixtures.cjs 生成
+bash support/regression-video-api.sh http://localhost:8080 "$PICSUR_ADMIN_PASSWORD"
+# 期望 RESULT: 54 passed, 0 failed
+
+# 要覆盖「超限 413」时，需一个 PICSUR_MAX_FILE_SIZE 较小的实例，并告知脚本该上限：
+PICSUR_MAX_FILE_SIZE_UNDER_TEST=2097152 \
+  bash support/regression-video-api.sh http://localhost:8081 "$PICSUR_ADMIN_PASSWORD"
+```
+
+视频夹具是「合法容器头 + 确定性填充」（`file-type` 只读容器头），不依赖本地编码器、
+不依赖 docker；mp4/webm 是正例，mov 是「可识别但不支持」的负例。
 
 夹具由 `support/make-image-fixtures.cjs` 负责（`[fixture-dir]` 默认 `/tmp/bugs-fx`，
 可用 `$PICSUR_FIXTURES` 覆盖）：它在本地 sharp 编不出 JXL/JP2 时**自动改用带完整
