@@ -1055,3 +1055,26 @@ zh-default 只改前端：picsur-img 增加 native 模式（原生 <img loading=
 ### Status
 
 [OK] **Completed**
+
+
+## Session 46: 查本地部署端口
+<!-- trellis-session: v=2 fp=eece6dc51911fe04 -->
+
+**Date**: 2026-11-01
+**Task**: 查本地部署端口
+**Package**: picsur-shared
+**Branch**: `master`
+
+### Summary
+
+只读核查本机 Picsur 部署：容器 picsur 将 0.0.0.0:8080 映射到容器 8080，/api/info 返回 200，版本 0.10.7，生产模式；当前运行的是发布镜像，未包含本轮视频上传功能。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c1e4a9a` | chore(task): record local deployment port check [task:11-01-local-port-check] |
+
+### Status
+
+[OK] **Completed**
