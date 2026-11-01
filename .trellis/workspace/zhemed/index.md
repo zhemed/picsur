@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 44
-- **Last Active**: 2026-10-31
+- **Total Sessions**: 45
+- **Last Active**: 2026-11-01
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1034 | Active |
+| `journal-1.md` | ~1057 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 45 | 2026-11-01 | 图床支持视频上传与直链 | `c366450` | `master` |
 | 44 | 2026-10-31 | 规划 Picsur 全栈迁移到 Rust | `35a85f2` | `master` |
 | 43 | 2026-10-30 | 单图多核可行性调查：前后端当前都不能，QOI 分块是唯一有上限的路径 | `daf7eed` | `master` |
 | 42 | 2026-10-30 | 上传并发调查收尾：文档漂移修复与转换 worker 池化 | `708d59e`, `0389ec2` | `master` |

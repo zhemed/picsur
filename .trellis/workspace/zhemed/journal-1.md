@@ -1032,3 +1032,26 @@ zh-default 只改前端：picsur-img 增加 native 模式（原生 <img loading=
 ### Status
 
 [OK] **Completed**
+
+
+## Session 45: 图床支持视频上传与直链
+<!-- trellis-session: v=2 fp=3792783bed6dc4b6 -->
+
+**Date**: 2026-11-01
+**Task**: 图床支持视频上传与直链
+**Package**: picsur-shared
+**Branch**: `master`
+
+### Summary
+
+实现 A 档视频上传与直链：shared 视频类型契约、后端视频 master 直通与 /i 直链、前端上传 accept 与图库/详情适配、i18n 中性化、新增视频夹具与回归脚本；视频回归 55/55，图片回归 34 通过加 4 项已知宿主 libvips 环境差异，三包构建通过；已提交 c366450 并归档任务。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c366450` | feat(video): support mp4/webm upload and direct links [task:11-01-video-upload] |
+
+### Status
+
+[OK] **Completed**
