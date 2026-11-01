@@ -1,6 +1,6 @@
 {
   "name": "picsur-shared",
-  "version": "0.10.7",
+  "version": "0.11.0",
   "description": "Shared libraries for Picsur",
   "license": "AGPL-3.0-or-later",
   "repository": "https://github.com/zhemed/picsur",

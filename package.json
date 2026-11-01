@@ -1,6 +1,6 @@
 {
   "private": true,
-  "version": "0.10.7",
+  "version": "0.11.0",
   "license": "AGPL-3.0-or-later",
   "scripts": {
     "build": "pnpm --filter picsur-shared build && pnpm --filter picsur-backend build && pnpm --filter picsur-frontend build",
