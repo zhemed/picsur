@@ -70,7 +70,7 @@ docker restart picsur                 # 验证重启恢复（数据在 ./data）
 | `PICSUR_STATIC_FRONTEND_ROOT`                    |  镜像内   | `/picsur/frontend/dist`           | 前端产物目录                                                                                                             |
 | `PICSUR_PRODUCTION`                              | ✅(生产)  | `false`                           | 生产模式：影响日志级别/格式、`/api/info` 的 `production` 字段、内置账号（guest/admin）的初始化。取值按 `ParseBool`：`true/1/yes` 真、`false/0/no` 假、缺省假。**不再控制 schema 同步**（A-2 起拆成下面的独立开关；旧版 `main.ts` 用 `!== undefined`、配置服务用 `ParseBool`，`PICSUR_PRODUCTION=false` 会一半当真一半当假） |
 | `PICSUR_SYNC_SCHEMA`                             |     —     | `false`                           | **默认关**：是否让 TypeORM 按实体自动同步表结构。开启 = 启动时 ALTER 表结构以匹配实体（**可能删掉它认为多余的列/表**），只能用于本地开发或空库，跑在有数据的库上等于赌博；开启时启动日志会打 WARN。审计 A-2 起是显式开关（此前由 `!production` 推导）。all-in-one 镜像不在 ENV 里设它，应用默认 `false`；要开用 `docker run -e PICSUR_SYNC_SCHEMA=true` |
-| `PICSUR_MAX_FILE_SIZE`                           |     —     | `128000000`                       | 上传字节上限。**图片与视频（mp4/webm）共用**：2026-11-01 起视频走同一入口，不新增视频专用上限变量。视频按原片字节入库，调大它同时放大内存峰值与 `./data` 备份体积 |
+| `PICSUR_MAX_FILE_SIZE`                           |     —     | `128000000`                       | 上传字节上限。**图片与视频共用**：2026-11-01 起视频走同一入口，不新增视频专用上限变量。视频按原片字节入库，调大它同时放大内存峰值与 `./data` 备份体积 |
 | `PICSUR_MAX_IMAGE_PIXELS`                        |     —     | `268402689`                       | 图像**像素**上限（`w*h`，sharp 默认 `0x3FFF^2`）；超限上传返回 400 并回显该值，`0` = 不限制。2026-10-13 起（issue #107）。`Dockerfile.allinone` 不设这个 ENV，应用默认值同为 268402689（`.env.example` 里也写死这个值，**别传空值**：空串会被 `ParseInt` 解析成 0 = 不限制） |
 | `PICSUR_MAX_DERIVATIVES_PER_IMAGE`               |     —     | `100`                             | 每图最多缓存多少张派生图（转码结果）。**超限只影响落库**：图片仍照常返回给用户，只是不再写库（WARN 日志），用于限制数据库体积；`0`（或负数） = 不限制。审计 A-8 新增。all-in-one 不设这个 ENV，应用默认值同为 100；要改用 `docker run -e PICSUR_MAX_DERIVATIVES_PER_IMAGE=<值>` |
 | `PICSUR_UPDATE_CHECK` | ✅ 默认开 | `true` | 面板「关于」页的版本检测：只读 `api.github.com/repos/zhemed/picsur/tags`，缓存 1 小时、失败降级、不发任何实例数据；`false` 关闭时接口返回 `checkEnabled:false`（不是报错）。**显式检查会绕过缓存**（见 §14）。0.7.0 起 |
@@ -155,6 +155,7 @@ if (!(await this.usageConfig.getMetricsUrl())) return; // ② 端点为空 → �
 | 上传     | `POST /api/image/upload`（multipart 字段 `file`）                                              | `201`，返回 `data.id`（UUID）                                                                                  |
 | 取回     | `GET /i/<id>.png`                                                                              | `200` + `image/png`；与原始图片**像素一致**（字节不保证一致）                                                  |
 | 转码     | `GET /i/<id>.{qoi,webp,avif,jxl,jp2,heif}`                                                     | 全部 `200`（证明镜像里的自编译 libvips **并且** sharp 是源码构建的）                                           |
+| 视频回归 | `bash support/regression-video-api.sh <base> <pwd>`                                            | 共 261 项断言：默认实例 413 一项 SKIP，即 260 passed 加 1 SKIP；小上限实例 261 passed。覆盖 11 种容器上传、直链 MIME 与字节一致、`Accept-Ranges`、单段 Range `206`/越界 `416`、多段降级 `200`、mpg 400、删除后 `404` |
 | SPA 深链 | `curl -o /dev/null -w '%{http_code} %{content_type}' localhost:8080/some/spa/route`            | `200 text/html` —— `@nestjs/serve-static` ≥11 的 `fallthrough` 回归只有这条能抓到                              |
 | 删除     | `POST /api/image/delete` `{"ids":[...]}`                                                       | `201`，且三张表 `e_image_backend`/`e_image_derivative_backend`/`e_image_file_backend` 计数归零                 |
 | 持久化   | `docker restart picsur` 后再取原图                                                             | `200` 且内容一致                                                                                               |
@@ -172,8 +173,9 @@ push 到任意分支 / PR 触发，跑 4 步（**不构建、不发布镜像**�
 | `bash support/audit-prod.sh` | **是**（`pnpm audit` 只认官方 registry） | 否 | 日志里「后端/共享 N 条」＝新增了带告警的生产依赖（必须处理，见 AGENTS.md §6）；只有 registry 连接错误＝网络问题，重跑，**别改脚本** |
 | `pnpm lint`（eslint flat config） | 否                                 | **否**       | 代码问题，按 `文件:行` 修。探针脚本（`support/*-probe.cjs`）在 CI 里**只做静态 lint**；真跑它们要本机常驻 Chromium（见 `bw`） |
 
-- **CI 里没有任何需要浏览器环境的步骤**：34 项镜像回归（`support/regression-image-api.sh`）、视觉对比度探针、
-  画廊布局探针都在开发机上手动跑（它们要真实浏览器 + 起实例）。
+- **CI 里没有任何需要浏览器环境的步骤**：34 项图片回归（`support/regression-image-api.sh`）、
+  261 项视频回归（`support/regression-video-api.sh`，默认只有 413 一项 SKIP，即 260 passed）、
+  视觉对比度探针、画廊布局探针都在开发机上手动跑（它们要真实浏览器 + 起实例）。
 - 新增 CI 步骤时：写清「需要外网/浏览器吗」，并在上面表格里加一行；**不允许**用 `|| true`、`continue-on-error`
   或“把目录排除出 lint”来换绿色（2026-10-16 的事故就是这样埋的：lint 步骤上线时 `support/*.cjs`
   缺 Node/浏览器 globals，`no-undef` 报 53 处 error，CI 连续 5 次红）。
@@ -225,6 +227,32 @@ docker exec picsur-<stream> ls /picsur/frontend/dist   # 判据：有文件才�
 - 升级后回滚别依赖 `-prev-` 容器，走「从 ghcr 仍在的 `:<旧版本>` 常规镜像 + `Dockerfile.allinone` 重建
   `:allinone`」的路径，或改用面板自升级让应用自己处理回滚；
 - 旧 allinone 镜像可能在重打标签后变成无标签镜像被回收，升级前就 `docker image inspect` 确认它还在。
+
+### 6.3 热部署顺序铁律：先 frontend/dist，再 backend/shared dist，最后重启（2026-11-01 实测）
+
+用 `docker cp` 热部署（不改镜像、只覆盖容器内 dist）时，顺序必须是：
+
+1. 先把新 `frontend/dist` 拷进容器；
+2. 再拷新 `backend/dist` 与 `shared/dist`；
+3. 最后重启后端进程或容器。
+
+**反向顺序会踩到「页面一直转圈」**：`@nestjs/serve-static` v12 的 FastifyLoader 以 `wildcard:false`
+注册 `@fastify/static`，**静态文件路由在启动时按当时的 dist 文件列表固化**。若先重启、后拷新前端，
+新构建的 hashed JS 不在已注册列表里，会被 SPA fallback 返回 `index.html` 且 HTTP 状态仍是 200，
+浏览器把 HTML 当 JS 解析失败，动态 import 报 `Failed to fetch dynamically imported module`，
+页面停在「加载中」。2026-11-01 实测：163 个新构建文件里恰好 6 个新 JS 被这样回退成 `text/html`。
+
+判据与补救：
+
+- 拷完前端与后端产物后**一次重启**；若已经反向操作过，确认 `frontend/dist` 已就位后再重启一次，
+  静态路由会重新扫描注册；
+- 重启后抽查一个新 JS：`curl -sI http://localhost:8080/<新-JS哈希>.js` 的 `Content-Type`
+  必须是 `application/javascript`，若是 `text/html` 说明又踩了本坑；
+- 页面症状识别：`/api/info` 200、`index.html` 也 200，但浏览器控制台报动态 import 失败、
+  页面停在加载动画 —— 先查静态路由注册顺序，不要先怀疑前端代码。
+
+> 热部署本身不是持久发布：容器重建或面板自升级会回到镜像里的旧 dist。正式发布仍走
+> `support/release-local.sh` 构建并推送镜像（见 §9）或面板自升级。
 
 ---
 

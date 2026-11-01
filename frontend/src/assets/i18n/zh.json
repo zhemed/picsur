@@ -125,6 +125,8 @@
     "videoNoPreviewTitle": "视频文件",
     "videoNoPreviewDescription": "该视频不能在页面内播放，请使用直链或下载。",
     "videoNotice": "视频按上传文件原样提供，不做格式转换。",
+    "videoUnsupportedTitle": "该视频格式无法在浏览器中播放",
+    "videoUnsupportedDescription": "请使用直链，或下载文件后在本地播放。",
     "uploadedBy": "{{ user }} 上传于 {{ date }}",
     "imageUrl": "文件 URL",
     "imageFormat": "图片格式",
@@ -272,7 +274,7 @@
       "permission": "权限",
       "permissionsMultiple": "权限",
       "adminReadonly": "内置 admin 账号的权限不可编辑，只有密码可以修改。",
-    "adminAlwaysAll": "内置 admin 账号始终拥有全部权限，不可编辑。",
+      "adminAlwaysAll": "内置 admin 账号始终拥有全部权限，不可编辑。",
       "effectivePermissions": "有效权限",
       "update": "更新"
     },

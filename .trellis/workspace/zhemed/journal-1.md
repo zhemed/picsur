@@ -1101,3 +1101,87 @@ zh-default 只改前端：picsur-img 增加 native 模式（原生 <img loading=
 ### Status
 
 [OK] **Completed**
+
+
+## Session 48: 部署视频上传版本到本机 8080
+<!-- trellis-session: v=2 fp=a1ce89ba61bcc725 -->
+
+**Date**: 2026-11-01
+**Task**: 部署视频上传版本到本机 8080
+**Package**: picsur-shared
+**Branch**: `master`
+
+### Summary
+
+用户继续部署后，主会话弹窗授权服务单元 picsur，执行成员热部署新 backend/shared/frontend 并重启容器；54 项视频回归全过、png 冒烟通过、数据清理；容器 healthy，新前端在线。任务 11-01-deploy-video-build 已归档。任务记录因 W-1 闸门未提交入库。
+
+### Git Commits
+
+(No commits - planning session)
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 49: 修复热部署后页面转圈
+<!-- trellis-session: v=2 fp=863ae741001d41f5 -->
+
+**Date**: 2026-11-01
+**Task**: 修复热部署后页面转圈
+**Package**: picsur-shared
+**Branch**: `master`
+
+### Summary
+
+热部署顺序错误导致 6 个新前端脚本被 SPA fallback 返回 index.html，Angular 无法启动一直转圈；弹窗授权服务单元 picsur 后重启容器，静态插件重新注册，163 个资源 Content-Type 全部正确，bw 验证页面渲染与视频上传通过；任务 11-01-fix-frontend-static-spa 已归档。
+
+### Git Commits
+
+(No commits - planning session)
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 50: 视频 Range 与页面内直接播放
+<!-- trellis-session: v=2 fp=5c4997d26cd2595d -->
+
+**Date**: 2026-11-01
+**Task**: 视频 Range 与页面内直接播放
+**Package**: picsur-shared
+**Branch**: `master`
+
+### Summary
+
+实现视频单段 Range 206/416 与前端的 video 直接播放；独立验证 90 项回归、139 项攻击断言、真实 webm 与 mp4 播放并收到 206；修复 416 缓存头；文档同步；热部署到 8080 并验证通过，真实 mp4 与 webm 可播放可拖进度。任务已归档，代码改动因 W-1 闸门未提交。
+
+### Git Commits
+
+(No commits - planning session)
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 51: 视频容器扩展到 11 种且不转码
+<!-- trellis-session: v=2 fp=011af5d3d1f9aea8 -->
+
+**Date**: 2026-11-01
+**Task**: 视频容器扩展到 11 种且不转码
+**Package**: picsur-shared
+**Branch**: `master`
+
+### Summary
+
+白名单扩到 mp4/webm/mov/mkv/avi/wmv/flv/ts/3gp/ogv/m4v 共 11 种，mpg 因 MIME 不稳定排除；前端 canPlayType 决定播放器或提示面板；视频回归 261 项、独立攻击 325 项、shared 契约 127 项全过；热部署到 8080 并验证 mov 与 mkv 上传直链 Range 206、mpg 400；文档同步 11 容器与 261 口径。任务已归档，代码未提交。
+
+### Git Commits
+
+(No commits - planning session)
+
+### Status
+
+[OK] **Completed**

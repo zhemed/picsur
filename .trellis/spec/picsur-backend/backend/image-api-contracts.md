@@ -64,10 +64,10 @@ GET    /api/pref/sys  /  /api/pref/sys/:key
 | `file_name` | string | 上传文件名的**去扩展名**形式 |
 | `expires_at` | ISO 时间 \| null | null = 永不过期 |
 | `delete_key` | string \| null | 带权限时返回，用于匿名删除 |
-| `source_filetype` | string \| null | **上传时的真实格式**（如 `image:png` / `image:jpeg`，视频为 `video:mp4` / `video:webm`），#128 起新增；升级前的旧行为 `null` |
+| `source_filetype` | string \| null | **上传时的真实格式**（如 `image:png` / `image:jpeg`，视频为 `video:mp4` / `video:webm` / `video:mov` 等 11 种容器标识），#128 起新增；升级前的旧行为 `null` |
 
 - 默认存储格式为 **QOI**（无损）；能否保留原始文件取决于系统设置 `keep original`。
-- 视频（A 档）：master 就是上传原片，不走 sharp、不生成派生图；`width`/`height` 恒为 `null`；`keep_original` 对视频不产生第二份 original（语义见 §3.9）。
+- 视频（无转码）：master 就是上传原片，不走 sharp、不生成派生图；`width`/`height` 恒为 `null`；`keep_original` 对视频不产生第二份 original（语义见 §3.9）。
 - ⚠️ `source_filetype` 的用途是让**前端**默认选中「上传时的格式」（#128）：
   **它不改变后端路由行为** —— 普通栅格图 `/i/<id>`（无扩展名）依然按「有无原图」分流，视频与 SVG 才回落 master，见 §3.4。
 
@@ -103,38 +103,86 @@ GET    /api/pref/sys  /  /api/pref/sys/:key
 - 与分页版 `list` 的差别：不返回 `page`/`pages`，一次给全量
 - 匿名调用 → **403**（实测）
 
-### 3.9 视频（A 档：只上传与直链，2026-11-01）
+### 3.9 视频（11 容器白名单、单段 Range 与直接播放，2026-11-01）
 
-范围边界：**没有 Range/206**、**没有页面内播放器**、**没有转码/海报/时长**。视频只承诺「能上传、能拿直链下载」。
-用户已接受这些限制（任务 `11-01-video-upload`）。实现细节与设计见该任务 `design.md`。
+范围边界：接受 11 种视频容器并**原样存储、原样提供**；**支持单段 HTTP Range 与 `206`**；
+详情页**能播就播、不能播就明确提示**；**绝不转码**、没有海报/时长；
+**不做多段 Range 合并**（不实现 `multipart/byteranges`，多段请求按 `200` 整段返回）。
+视频字节就是上传原片，Range 只按切片读取，不改存储。
+演进记录：A 档（任务 `11-01-video-upload`）只有上传与直链；任务
+`11-01-video-direct-playback` 补了单段 Range 与播放器；任务 `11-01-video-more-containers`
+把白名单从 mp4 与 webm 扩到 11 种容器，并改为浏览器能力探测决定是否渲染播放器。
 
-**允许的容器**：`video/mp4`（`video:mp4`）与 `video/webm`（`video:webm`），白名单在 shared 的
-`VideoFileType` / `SupportedVideoFileTypes`。来自 `file-type` 的魔数识别，mov / mkv / avi / pdf 等
-**可识别但未支持**的格式在上传时拒绝。
+**允许的容器**：白名单在 shared 的 `VideoFileType` / `SupportedVideoFileTypes`，共 11 种；
+直链 MIME 取 `FileType2MimeMap`，即 `file-type` 魔数识别实际报告的值，部分容器不是厂商惯用 MIME：
+
+| 容器 | 标识 | 直链 MIME | 扩展名 |
+|---|---|---|---|
+| MP4 | `video:mp4` | `video/mp4` | `.mp4` |
+| WebM | `video:webm` | `video/webm` | `.webm` |
+| QuickTime | `video:mov` | `video/quicktime` | `.mov` |
+| Matroska | `video:mkv` | `video/matroska` | `.mkv` |
+| AVI | `video:avi` | `video/vnd.avi` | `.avi` |
+| WMV / ASF | `video:wmv` | `video/x-ms-asf` | `.wmv` |
+| FLV | `video:flv` | `video/x-flv` | `.flv` |
+| MPEG-TS | `video:ts` | `video/mp2t` | `.ts` |
+| 3GPP | `video:3gp` | `video/3gpp` | `.3gp` |
+| Ogg 视频 | `video:ogv` | `video/ogg` | `.ogv` |
+| M4V | `video:m4v` | `video/x-m4v` | `.m4v` |
+
+**不收 mpg / mpeg（MPEG-PS）**：`file-type` 对合法 MPEG-PS 可能报 `video/mpeg`、`video/MP1S` 或
+`video/MP2P`，单一 MIME 映射不稳定；它是「可识别但不在白名单」的负例，上传返回 **400**
+`usrvalidation`，不是 500。PDF、随机字节等识别不出视频的输入同样 400。
 
 | 请求/场景 | 实测契约 |
 |---|---|
-| `POST /api/image/upload` mp4/webm | `201`，`data.source_filetype` 为 `video:mp4` / `video:webm`；`width`/`height` 为 `null`；权限、限流、multipart 上限与图片共用 |
+| `POST /api/image/upload` 11 种容器任一 | `201`，`data.source_filetype` 为对应 `video:<容器>` 标识；`width`/`height` 为 `null`；权限、限流、multipart 上限与图片共用 |
 | 视频 master | **就是上传原片字节**，不走 sharp、不生成派生图；`keep_original` 打开也不额外存 second copy（master 已是原片） |
-| 上传 mov/mkv/avi 等 | **400** `{"type":"usrvalidation","message":"Unsupported upload format: video/quicktime"}`（修复前是 500） |
+| 上传 mpg（MPEG-PS） | **400** `{"type":"usrvalidation","message":"Unsupported upload format: video/mpeg"}`；真实文件也可能报 `video/MP1S` / `video/MP2P`（修复前是 500） |
 | 超过 `PICSUR_MAX_FILE_SIZE` | **413**（与图片共用同一个 env，无新变量） |
-| `GET /i/<id>.mp4` / `.webm` | `200`，`Content-Type: video/mp4` / `video/webm`，`Content-Length` = 文件字节数，`X-Content-Type-Options: nosniff`，`Cache-Control: max-age=2592000`；**不发 `Accept-Ranges`**；字节与上传**完全一致**（无转码） |
-| `GET /i/<id>`（无扩展名） | `200` master 原片（视频与 SVG 一样回落 master，不受 `hasOriginal` 影响） |
-| `HEAD /i/<id>.mp4` | `200` + 同样的 `Content-Type` / `Content-Length`（长度用 `octet_length` 查，不读整段文件），无正文 |
-| `HEAD /i/<id>`（无扩展名） | 同 GET 解析出的 master 类型与长度 |
-| `HEAD /i/<id>.webm` 而 master 是 mp4 | **400**（与 GET 一致，避免 HEAD 200 / GET 400） |
+| `GET /i/<id>.<容器扩展名>` | 11 种容器都 `200`，`Content-Type` 为映射 MIME（见上表），`Content-Length` = 完整文件字节数，`X-Content-Type-Options: nosniff`，`Cache-Control: max-age=2592000`，**`Accept-Ranges: bytes`**；字节与上传**完全一致**（无转码） |
+| `GET /i/<id>`（无扩展名） | `200` master 原片（视频与 SVG 一样回落 master，不受 `hasOriginal` 影响）；**同样支持 Range**，播放器可直接拿无扩展名直链拖进度 |
+| `HEAD /i/<id>.<容器扩展名>` | `200` + 同样的 `Content-Type` / **完整 `Content-Length`**（`octet_length` 查，不读文件）+ **`Accept-Ranges: bytes`**，无正文 |
+| `HEAD /i/<id>`（无扩展名） | 同 GET 解析出的 master 类型与长度；**同样带 `Accept-Ranges: bytes`** |
+| `HEAD /i/<id>.<另一种容器扩展名>` 而 master 是另一种容器 | **400**（与 GET 一致，避免 HEAD 200 / GET 400） |
 | `GET /i/<视频 id>.webp`、`.jpg` 等 | **400** `usrvalidation`：跨媒体转换不尝试 sharp |
 | `HEAD /i/<视频 id>.webp`（图片扩展名） | **400** `usrvalidation`（HEAD 与 GET 同语义，不能 HEAD 200 而 GET 400） |
 | `GET /i/<图片 id>.mp4` | **400** `usrvalidation`：图片不能转成视频容器 |
-| mp4 master 请求 `.webm`（或反向） | **400** `usrvalidation`：不做容器互转 |
-| `GET /i/<video id>.mp4?width=100` 等编辑参数 | **200 全量原片**：视频忽略编辑参数（不转码、不 400） |
-| 带 `Range: bytes=...` 请求 | **200 全量**，无 `Content-Range`/`206`（A 档忽略 Range） |
+| 请求其它容器扩展名（如 mov master 请求 `.mkv`） | **400** `usrvalidation`：不做容器互转 |
+| `GET /i/<video id>.<容器扩展名>?width=100` 等编辑参数 | **200 全量原片**：视频忽略编辑参数（不转码、不 400） |
+| `Range: bytes=0-99` | **11 种容器一致**：**`206`** + `Content-Range: bytes 0-99/<size>` + `Content-Length: 100` + `Content-Type` + `Accept-Ranges: bytes` + `Cache-Control: max-age=2592000`；切片字节与整段前 100 字节**逐字节一致** |
+| `Range: bytes=100-`（开放区间） | `206`，`Content-Range: bytes 100-<size-1>/<size>`，`Content-Length: size-100` |
+| `Range: bytes=-100`（后缀区间） | `206`，取最后 100 字节；`Content-Range: bytes <size-100>-<size-1>/<size>` |
+| `Range: bytes=0-<超出 EOF>` | `206`，end 截断到 `<size-1>`；整段都在范围内时 `Content-Range: bytes 0-<size-1>/<size>` |
+| `Range: bytes=-<N>` 且 N 大于文件 | `206`，按整段返回，`Content-Range: bytes 0-<size-1>/<size>` |
+| 越界 Range：`start >= size` | **`416`** + `Content-Range: bytes */<size>` + `Content-Length: 0`，**无正文** |
+| 非法 Range：非 `bytes=` 单位、`bytes=abc`、`start > end`、`bytes=-0`、空区间 | **`416`** + `Content-Range: bytes */<size>`，无正文 |
+| 多段 Range：`bytes=0-1,5-6` | **`200` 整段**，无 `Content-Range`、无 `206`（不做 `multipart/byteranges` 合并） |
+| `HEAD` 带 `Range` 头 | **`200` 全量元数据**：HEAD 不分段，`Content-Length` 仍是完整大小 |
+| 图片带 `Range` 头 | **`200` 整段**，无 `Accept-Ranges` / `Content-Range`（Range 只对视频直链生效） |
 | 删除后 GET/HEAD 视频直链 | **404** + 品牌占位图 + `Cache-Control: no-store`（与图片一致） |
 | `GET /i/meta/<id>` 视频 | `200` + `no-store`；`data.image.source_filetype` 与 `data.fileTypes.master` 均为 `video:` 前缀；`width`/`height` 为 `null` |
 | `POST /api/image/list`、`list/all` 视频行 | 行内 `source_filetype = 'video:...'`（列表无 `fileTypes`；前端用该前缀判定） |
 
+**详情页播放策略**：播放器只渲染 `<video controls playsinline preload="metadata">`，不自动播放、绝不转码。
+
+- MP4 与 WebM：在 shared 的 `PlayableVideoFileTypes` 白名单里，浏览器原生可播，直接渲染播放器。
+- 其余 9 种容器：先用 `document.createElement('video').canPlayType(mime)` 探测；返回 `probably` 或
+  `maybe` 才渲染播放器，返回空字符串则**不渲染播放器**，直接显示「该格式无法在浏览器中播放」提示面板
+  （`view.videoUnsupportedTitle` / `view.videoUnsupportedDescription`）。
+- 播放器触发 `error`：`canPlayType` 只是提示，解码仍可能失败；回退到
+  `view.videoNoPreviewTitle` / `view.videoNoPreviewDescription` 提示面板。
+- 两种提示面板都保留直链与下载按钮，页面下方显示 `view.videoNotice`：视频按上传原样提供，不做格式转换。
+
+直链、同源下载与 Markdown / HTML / BBCode / Rst 分享模板跟随 11 种扩展名映射；视频不显示「图片格式」下拉。
+上传 `accept` 由 shared 白名单同时列出 MIME 与扩展名生成：MKV / AVI / WMV 的 MIME 在部分文件选择器里
+匹配不到，只列 MIME 会让这些容器选不中。
+证据：`frontend/src/app/routes/view/view.component.html`、`view.component.ts`、
+`frontend/src/app/routes/upload/upload.component.ts`。
+
 **零迁移识别方案**：不新增字段/实体/迁移，视频类别由 `source_filetype` 的 `video:` 前缀承载；
-shared 提供 `IsVideoFiletypeIdentifier()` 作为唯一判定点，前端图库、详情页、后端控制器共用。
+shared 提供 `IsVideoFiletypeIdentifier()` 作为视频类别唯一判定点、`IsPlayableVideoFiletype()`
+判定原生可播集合，前端图库、详情页、后端控制器共用。
 
 ### 3.5 `POST /api/image/delete`
 
@@ -182,10 +230,10 @@ shared 提供 `IsVideoFiletypeIdentifier()` 作为唯一判定点，前端图库
 | 超过 `PICSUR_MAX_FILE_SIZE` | **413** `payloadtoolarge`（图片与视频共用；实测视频超限 413） |
 | 超过像素上限的图片 | **400** `{"type":"usrvalidation","data":{"message":"Image is too large to process: <w>x<h> (<n> pixels) exceeds the maximum of <limit> pixels. Set PICSUR_MAX_IMAGE_PIXELS to raise the limit (0 disables it)."}}`（修复前是 500 `Worker closed`） |
 | 图片头读不出（损坏，或当前 libvips 无该格式解码器） | 400 `"Failed to read image metadata: <底层原因>"`；宿主的预编译 sharp 缺 JXL/JP2 解码器，同一文件在自编译 libvips 的镜像里上传正常 |
-| 上传可识别但未支持的容器（mov/mkv/avi 等） | **400** `usrvalidation`，message 以 `Unsupported upload format: <mime>` 开头（修复前是 500） |
+| 上传可识别但不在白名单的容器（mpg / MPEG-PS 等） | **400** `usrvalidation`，message 以 `Unsupported upload format: <mime>` 开头，mpg 实际报 `video/mpeg`；PDF 等可识别但非白名单的输入同样走这条（修复前是 500），随机字节等无法识别的输入由下一行处理 |
 | 上传无法识别的字节 | 400 `usrvalidation`（既有行为，不变） |
 | `/i/<视频 id>.<非视频扩展名>` 或 `/i/<图片 id>.mp4` | **400** `usrvalidation`（跨媒体转换被明确拒绝，不动 sharp） |
-| 视频直链带 `Range` 头 | **200 全量**，没有 `206`/`Content-Range`/`Accept-Ranges`（A 档不实现 Range） |
+| 视频直链带 `Range` 头 | 单段合法 Range → **206** + `Content-Range` + `Content-Length` 为切片长度；越界或非法 → **416** + `Content-Range: bytes */<size>` 且无正文；多段 Range → **200** 整段；图片带 Range → **200** 整段（Range 只对视频生效） |
 | `PICSUR_MAX_IMAGE_PIXELS` | 未设 = 268402689（sharp 默认 `0x3FFF^2`）；`0` = 不限制 |
 
 ---
@@ -210,7 +258,7 @@ shared 提供 `IsVideoFiletypeIdentifier()` 作为唯一判定点，前端图库
 | 删除语义 | `GET/HEAD /i/<已删除 id>.<ext>` → **404** 且 `Cache-Control: no-store`；`GET /i/<未删除 id>.<ext>` → 200 且 `max-age=2592000`（两个方向都要断言，防止一刀切砍掉性能特性） |
 | 超像素上传 | → 400，且消息里同时出现实际像素数与上限值；之后 `/api/info` 仍 200（服务未崩） |
 | 7 种格式转码 | `qoi/webp/avif/jxl/jp2/heif/png` 全部 200；**JXL/JP2 必须在容器/自编译 libvips 环境跑**，宿主预编译 sharp 没有这两个解码器（见 `build-and-deploy.md` §8.3.4） |
-| 视频直链（A 档） | `support/regression-video-api.sh` 全绿：mp4/webm 上传、HEAD、带/不带扩展名直链字节一致、`Content-Length`、无 `Accept-Ranges`、meta 与列表 `video:` 前缀、跨格式 400、mov 400、超限 413、删除后 404 + `no-store`；视频范围与边界见 §3.9 |
+| 视频直链（11 容器、单段 Range 与直接播放） | `support/regression-video-api.sh` 共 261 项断言：默认 128MB 实例 413 一项 SKIP，即 260 passed 加 1 SKIP；小上限实例 261 passed。覆盖 11 种容器上传 `201` 与 `source_filetype`、HEAD、带与不带扩展名直链 MIME 与字节一致、`Accept-Ranges`、单段 Range `206` 加 `Content-Range`、开放区间、后缀区间、越界与非法 `416`、多段降级 `200`、meta 与列表 `video:` 前缀、跨容器 400、mpg 400、超限 413、删除后 404 加 `no-store`；视频范围与边界见 §3.9 |
 
 ### 6.1 可复现的回归脚本（必须自给自足）
 
@@ -223,20 +271,22 @@ bash support/regression-image-api.sh http://localhost:8080 "$PICSUR_ADMIN_PASSWO
 # 期望 RESULT: 34 passed, 0 failed
 ```
 
-视频 A 档的独立冒烟（任务 `11-01-video-upload` 交付，`config/scripts` 夹具自给）：
+视频独立回归由任务 `11-01-video-upload` 交付，任务 `11-01-video-direct-playback` 扩展 Range 与 206，
+任务 `11-01-video-more-containers` 扩展 9 种新容器；`config/scripts` 夹具自给：
 
 ```bash
 # 默认实例；夹具缺失时自动调用 make-video-fixtures.cjs 生成
 bash support/regression-video-api.sh http://localhost:8080 "$PICSUR_ADMIN_PASSWORD"
-# 期望 RESULT: 54 passed, 0 failed
+# 共 261 项断言；默认 128MB 实例上 413 一项 SKIP，通常看到 RESULT: 260 passed, 0 failed
 
-# 要覆盖「超限 413」时，需一个 PICSUR_MAX_FILE_SIZE 较小的实例，并告知脚本该上限：
+# 要覆盖「超限 413」并跑满 261 项时，需一个 PICSUR_MAX_FILE_SIZE 较小的实例，并告知脚本该上限：
 PICSUR_MAX_FILE_SIZE_UNDER_TEST=2097152 \
   bash support/regression-video-api.sh http://localhost:8081 "$PICSUR_ADMIN_PASSWORD"
+# 期望 RESULT: 261 passed, 0 failed
 ```
 
 视频夹具是「合法容器头 + 确定性填充」（`file-type` 只读容器头），不依赖本地编码器、
-不依赖 docker；mp4/webm 是正例，mov 是「可识别但不支持」的负例。
+不依赖 docker；11 种容器是正例，mpg（MPEG-PS）是「可识别但不在白名单」的负例。
 
 夹具由 `support/make-image-fixtures.cjs` 负责（`[fixture-dir]` 默认 `/tmp/bugs-fx`，
 可用 `$PICSUR_FIXTURES` 覆盖）：它在本地 sharp 编不出 JXL/JP2 时**自动改用带完整

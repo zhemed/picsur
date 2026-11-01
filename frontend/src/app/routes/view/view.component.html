@@ -37,25 +37,61 @@
       ></picsur-img>
 
       <!--
-        No player in this tier: a video is shown as a panel with its direct link
-        and a same-origin download anchor, so the page never renders a broken
-        image and never pulls the whole file into an <img>.
+        mp4 and webm are played straight from the upload: no transcoding, the
+        backend serves the stored bytes and supports Range so seeking works.
+        For the other accepted containers the component probes the browser with
+        canPlayType first and only renders the player when the answer is not
+        empty. `preload="metadata"` keeps the initial page load small, and
+        playsinline is what lets iOS Safari play without hijacking full screen.
       -->
-      <div *ngIf="isVideo" class="video-placeholder" data-media-kind="video">
-        <span class="video-placeholder-icon" aria-hidden="true"></span>
-        <h3>{{ 'view.videoNoPreviewTitle' | translate }}</h3>
-        <p>{{ 'view.videoNoPreviewDescription' | translate }}</p>
-        <a
-          mat-stroked-button
-          [href]="videoLink"
-          [attr.download]="videoDownloadName"
-          target="_blank"
-          rel="noopener"
+      <ng-container *ngIf="isVideo">
+        <video
+          *ngIf="videoPlayable && !videoPlaybackFailed"
+          class="video-player"
+          controls
+          playsinline
+          preload="metadata"
+          [src]="videoLink"
+          (error)="onVideoError()"
+        ></video>
+
+        <!-- The container is accepted and downloadable, but this browser has no
+             decoder for it: say so instead of rendering an empty player. -->
+        <div
+          *ngIf="!videoPlayable"
+          class="video-placeholder"
+          data-media-kind="video"
         >
-          <mat-icon fontSet="material-icons-outlined">download</mat-icon>
-          {{ 'common.actions.download' | translate }}
-        </a>
-      </div>
+          <span class="video-placeholder-icon" aria-hidden="true"></span>
+          <h3>{{ 'view.videoUnsupportedTitle' | translate }}</h3>
+          <p>{{ 'view.videoUnsupportedDescription' | translate }}</p>
+        </div>
+
+        <!-- Fallback when the browser claims support but decoding still fails:
+             keep the old panel and point at the direct link and download. -->
+        <div
+          *ngIf="videoPlayable && videoPlaybackFailed"
+          class="video-placeholder"
+          data-media-kind="video"
+        >
+          <span class="video-placeholder-icon" aria-hidden="true"></span>
+          <h3>{{ 'view.videoNoPreviewTitle' | translate }}</h3>
+          <p>{{ 'view.videoNoPreviewDescription' | translate }}</p>
+        </div>
+
+        <div class="video-actions">
+          <a
+            mat-stroked-button
+            [href]="videoLink"
+            [attr.download]="videoDownloadName"
+            target="_blank"
+            rel="noopener"
+          >
+            <mat-icon fontSet="material-icons-outlined">download</mat-icon>
+            {{ 'common.actions.download' | translate }}
+          </a>
+        </div>
+      </ng-container>
     </div>
 
     <div class="col-md-6 col-12">

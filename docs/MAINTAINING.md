@@ -73,7 +73,7 @@ bash support/release-local.sh --dry-run
   （面板比较的是版本号，重推同版本对已部署的实例不可见）。
 - 发布前自检：`bash support/audit-prod.sh`（后端/共享口径必须 0；浏览器侧应无 critical/high）、
   `bash support/regression-image-api.sh <base-url> <admin-password>`（34 项接口/格式回归）、
-  `bash support/regression-video-api.sh <base-url> <admin-password>`（54 项视频上传/直链回归）。
+  `bash support/regression-video-api.sh <base-url> <admin-password>`（261 项视频上传、11 容器直链、Range 206/416 与直接播放回归；默认 128MB 实例有 413 一项 SKIP，即 260 passed）。
   回归**夹具自给**：缺 `base.{png,jpg,webp,avif,jxl,jp2,heif,qoi}` / `big-900mp.png` 时脚本
   自动生成（本地 sharp 编不出 JXL/JP2 就换带完整 libvips 的容器，
   `PICSUR_FIXTURE_IMAGE`，默认 `ghcr.io/zhemed/picsur:allinone`）；docker 不可用会直接报错退出。
@@ -111,24 +111,28 @@ docker run -d --name picsur-devdb --restart unless-stopped \
 1. 接口/格式回归（一条命令，夹具自动就位）：
    ```bash
    bash support/regression-image-api.sh <新实例> <管理员口令>   # → RESULT: 34 passed, 0 failed
-   bash support/regression-video-api.sh <新实例> <管理员口令>   # → RESULT: 55 passed, 0 failed
+   bash support/regression-video-api.sh <新实例> <管理员口令>   # → RESULT: 260 passed, 0 failed；小上限实例覆盖 413 后为 261 passed
    ```
 2. 打开面板「关于」页：显示当前/最新版本、**不是**「正在检查更新…」或「未启用」；
 3. 若这次含自升级相关改动：在测试实例点一次「立即升级」，确认进度显示、成功自动刷新；
 4. 数据抽查：升级前后图片数量一致、任取一张图 `/i/<id>.png` 返回 200。
-5. 视频抽查（含视频支持的发布起）：上传一个 mp4，`/i/<id>.mp4` 返回 200 `video/mp4` 且字节一致；
-   图库显示 VIDEO 占位卡；详情页给出直链与同源下载，不出现坏图。
+5. 视频抽查（含视频支持的发布起）：上传一个 mp4，`/i/<id>.mp4` 返回 200 `video/mp4`、带
+   `Accept-Ranges: bytes` 且字节一致；`curl -H 'Range: bytes=0-99'` 返回 206 与 `Content-Range`；
+   图库显示 VIDEO 占位卡；详情页用 `<video>` 直接播放、能拖进度条，直链、同源下载与四种分享模板可用；
+   再上传一个 mov 或 mkv，详情页按 `canPlayType` 显示播放器或「无法在浏览器中播放」提示面板，
+   绝不转码；浏览器无法解码时回退提示面板并引导直链或下载。
 
 ### 5.1 视频存储开销（含视频支持的发布起）
 
 - 视频按**原片字节**存进 Postgres bytea（master = 原片，不额外存 original），上限沿用
   `PICSUR_MAX_FILE_SIZE`（默认 128,000,000 字节）。图片与视频共用这个上限，没有新变量。
-- 开销：视频直接放大数据库与 `./data` 备份体积；上传与取回都是**整段读进内存**，
-  128 MB 文件单请求内存峰值约 2 到 3 倍文件体积，并发取视频会按并发数叠加。
-  部署侧需要评估，必要时把 `PICSUR_MAX_FILE_SIZE` 调小（`docker run -e`）。
-- A 档已知边界：**没有 Range/206**（浏览器与下载器只能整段获取，Safari 等场景体验受限）、
-  **没有页面内播放器**（详情页只给直链与下载）、**没有转码**（编码不兼容时只能下载后本地播放）、
-  **没有海报/时长**（图库是占位卡）。二期再评估。
+- 开销：视频直接放大数据库与 `./data` 备份体积；上传与整段 GET 都是**整段读进内存**，
+  128 MB 文件单请求内存峰值约 2 到 3 倍文件体积，并发取视频会按并发数叠加；Range GET 只在
+  Postgres 内取切片，不整段加载。部署侧需要评估，必要时把 `PICSUR_MAX_FILE_SIZE` 调小（`docker run -e`）。
+- 当前边界：**支持 11 种容器上传与直链、单段 Range/206 与页面内直接播放**，Safari 等必须 206 才能播的
+  场景已覆盖；多段 Range 不合并，按 200 整段降级。**绝不转码**：MP4 与 WebM 直接渲染播放器，mov / mkv /
+  avi 等其余容器按浏览器 `canPlayType` 决定播放器或「无法在浏览器中播放」提示面板；**没有海报/时长**
+  （图库是占位卡）。二期再评估。
 
 ## 6. 排障速查
 

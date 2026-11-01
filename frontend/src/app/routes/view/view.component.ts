@@ -12,7 +12,9 @@ import { ImageLinks } from 'picsur-shared/dist/dto/image-links.class';
 import {
   AnimFileType,
   FileType2Ext,
+  FileType2Mime,
   ImageFileType,
+  IsPlayableVideoFiletype,
   SupportedFileTypeCategory,
 } from 'picsur-shared/dist/dto/mimes.dto';
 
@@ -57,6 +59,9 @@ export class ViewComponent implements OnInit, OnDestroy {
   public metadata: ImageMetaResponse | null = null;
   public set OnMetadata(metadata: ImageMetaResponse) {
     this.metadata = metadata;
+    // The route component can be reused for another id; player state of the
+    // previous video must not leak into the next one.
+    this.updateVideoPlayability();
     this.subscribeTimeout(metadata.image.expires_at);
 
     this.changeDetector.markForCheck();
@@ -68,6 +73,53 @@ export class ViewComponent implements OnInit, OnDestroy {
   }[] = [];
 
   public selectedFormat: string = ImageFileType.JPEG;
+
+  /**
+   * The browser refused to play the video element.
+   *
+   * mp4/webm are native formats, so this is unusual for them; it is the normal
+   * outcome for the optional containers (mov, mkv, ...) whose codecs may not be
+   * supported. The page then shows the direct link / download panel instead of
+   * an empty black box.
+   */
+  public videoPlaybackFailed = false;
+
+  /**
+   * Whether this browser can play the stored container at all.
+   *
+   * mp4 and webm are native everywhere, so the shared whitelist answers without
+   * a probe. Every other accepted container is stored and served as-is - the
+   * page must ask the browser via `canPlayType`; mp4 inside an mkv, QuickTime
+   * in Chrome and similar combinations legitimately come back with an empty
+   * answer. "probably" and "maybe" render the player, and a decode error still
+   * falls back to the panel because canPlayType is only a hint.
+   */
+  public videoPlayable = false;
+
+  public onVideoError(): void {
+    this.videoPlaybackFailed = true;
+    this.changeDetector.markForCheck();
+  }
+
+  private updateVideoPlayability(): void {
+    this.videoPlaybackFailed = false;
+    this.videoPlayable = false;
+
+    if (!this.isVideo || this.metadata === null) return;
+
+    const filetype = this.metadata.fileTypes.master;
+    if (IsPlayableVideoFiletype(filetype)) {
+      this.videoPlayable = true;
+      return;
+    }
+
+    const mime = FileType2Mime(filetype);
+    if (HasFailed(mime)) return;
+
+    const probe = document.createElement('video');
+    const support = probe.canPlayType(String(mime));
+    this.videoPlayable = support === 'probably' || support === 'maybe';
+  }
 
   public get image(): EImage | null {
     return this.metadata?.image ?? null;
@@ -210,6 +262,7 @@ export class ViewComponent implements OnInit, OnDestroy {
       }
 
       this.metadata = metadata;
+      this.updateVideoPlayability();
     }
 
     // Populate default selected format

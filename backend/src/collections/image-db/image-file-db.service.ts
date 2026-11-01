@@ -96,6 +96,36 @@ export class ImageFileDBService {
     }
   }
 
+  /**
+   * Reads one byte range of a stored file, without loading the whole file.
+   *
+   * `substr` runs in Postgres (the offsets are 1 based there, hence `offset+1`)
+   * and `octet_length` comes back in the same round trip, so serving a 206 for
+   * a 128 MB video moves only the requested slice through Node. The caller is
+   * expected to have validated the range against `getFileInfo()` first.
+   */
+  public async getFileSlice(
+    imageId: string,
+    variant: ImageEntryVariant,
+    offset: number,
+    length: number,
+  ): AsyncFailable<{ data: Buffer; size: number }> {
+    try {
+      const rows: { data: Buffer; size: string | number }[] =
+        await this.imageFileRepo.query(
+          `SELECT substr(data, $3, $4) AS data, octet_length(data) AS size
+             FROM e_image_file_backend
+            WHERE image_id = $1 AND variant = $2`,
+          [imageId, variant, offset + 1, length],
+        );
+
+      if (rows.length === 0) return Fail(FT.NotFound, 'Image not found');
+      return { data: rows[0].data, size: Number(rows[0].size) };
+    } catch (e) {
+      return Fail(FT.Database, e);
+    }
+  }
+
   public async migrateFile(
     imageId: string,
     sourceVariant: ImageEntryVariant,

@@ -125,6 +125,8 @@
     "videoNoPreviewTitle": "Video file",
     "videoNoPreviewDescription": "This video cannot be played inline. Use the direct link or download it.",
     "videoNotice": "Videos are served as the uploaded file; there is no format conversion.",
+    "videoUnsupportedTitle": "This video format cannot be played in the browser",
+    "videoUnsupportedDescription": "Use the direct link or download the file and play it locally.",
     "uploadedBy": "Uploaded {{ date }} by {{ user }}",
     "imageUrl": "File URL",
     "imageFormat": "Image Format",
@@ -272,7 +274,7 @@
       "permission": "permission",
       "permissionsMultiple": "Permissions",
       "adminReadonly": "The built-in admin account keeps every permission; only its password can be changed.",
-    "adminAlwaysAll": "The built-in admin account always has every permission and cannot be edited.",
+      "adminAlwaysAll": "The built-in admin account always has every permission and cannot be edited.",
       "effectivePermissions": "Effective Permissions",
       "update": "UPDATE"
     },

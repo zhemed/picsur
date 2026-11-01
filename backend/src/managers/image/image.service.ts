@@ -390,6 +390,26 @@ export class ImageManagerService {
     return this.imageFilesService.getFileInfo(imageId, ImageEntryVariant.MASTER);
   }
 
+  /**
+   * One byte range of the master file, read without loading the whole file.
+   *
+   * Used by the video direct link to answer `Range` requests with a 206: the
+   * slice is cut inside Postgres, so a seek in a 128 MB video does not pull the
+   * entire video into memory.
+   */
+  public async getMasterFileSlice(
+    imageId: string,
+    offset: number,
+    length: number,
+  ): AsyncFailable<{ data: Buffer; size: number }> {
+    return this.imageFilesService.getFileSlice(
+      imageId,
+      ImageEntryVariant.MASTER,
+      offset,
+      length,
+    );
+  }
+
   public async getOriginal(imageId: string): AsyncFailable<EImageFileBackend> {
     return this.imageFilesService.getFile(imageId, ImageEntryVariant.ORIGINAL);
   }

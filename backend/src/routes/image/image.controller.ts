@@ -1,4 +1,12 @@
-import { Controller, Get, Head, Logger, Query, Res } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Head,
+  Headers,
+  Logger,
+  Query,
+  Res,
+} from '@nestjs/common';
 import type { FastifyReply } from 'fastify';
 import {
   ImageMetaResponse,
@@ -47,6 +55,18 @@ const SvgContentSecurityPolicy = [
 // growth (audit A-8). The limit is deliberately loose: a gallery page pulls
 // dozens of thumbnails at once, and clients behind one NAT share a bucket.
 const ImageRequestsPerMinute = 600;
+
+/**
+ * Outcome of parsing a single `Range: bytes=...` request.
+ *
+ * `none` means "serve the whole file" - either there was no Range header, or it
+ * asked for multiple ranges, which this endpoint deliberately answers with the
+ * full body instead of a multipart/byteranges reply.
+ */
+type ByteRange =
+  | { kind: 'none' }
+  | { kind: 'partial'; start: number; end: number }
+  | { kind: 'unsatisfiable' };
 
 // This is the only controller with CORS enabled
 @Controller('i')
@@ -98,6 +118,7 @@ export class ImageController {
 
         this.setImageResponseHeaders(res, info.filetype);
         res.type(ThrowIfFailed(FileType2Mime(info.filetype)));
+        res.header('Accept-Ranges', 'bytes');
         res.header('Content-Length', String(info.size));
         return;
       }
@@ -137,14 +158,47 @@ export class ImageController {
     @Res({ passthrough: true }) res: FastifyReply,
     @ImageFullIdParam() fullid: ImageFullId,
     @Query() params: ImageRequestParams,
+    @Headers('range') range?: string,
   ): Promise<Buffer> {
     try {
       if (fullid.variant === ImageEntryVariant.ORIGINAL) {
+        const filetype = ThrowIfFailed(
+          await this.getOriginalDownloadFileType(fullid.id),
+        );
+
+        // A video has no separate original, so the extension-less URL falls
+        // back to the master. It is answered by the range-capable path because
+        // a player may use exactly this URL and needs to be able to seek.
+        if (IsVideoFiletypeIdentifier(filetype.identifier)) {
+          const info = ThrowIfFailed(
+            await this.imagesService.getMasterFileInfo(fullid.id),
+          );
+          return this.sendVideo(res, fullid.id, info, range);
+        }
+
         const image = ThrowIfFailed(await this.getOriginalDownload(fullid.id));
 
         this.setImageResponseHeaders(res, image.filetype);
         res.type(ThrowIfFailed(FileType2Mime(image.filetype)));
         return image.data;
+      }
+
+      // Videos are served from their master verbatim and with Range support;
+      // they never go through the converter (there is no video transcoding).
+      if (IsVideoFiletypeIdentifier(fullid.filetype)) {
+        const info = ThrowIfFailed(
+          await this.imagesService.getMasterFileInfo(fullid.id),
+        );
+
+        if (info.filetype !== fullid.filetype) {
+          throw Fail(
+            FT.UsrValidation,
+            'Unsupported conversion',
+            'Video formats cannot be converted',
+          );
+        }
+
+        return this.sendVideo(res, fullid.id, info, range);
       }
 
       const image = ThrowIfFailed(
@@ -240,7 +294,129 @@ export class ImageController {
 
     this.setImageResponseHeaders(res, info.filetype);
     res.type(ThrowIfFailed(FileType2Mime(info.filetype)));
+    res.header('Accept-Ranges', 'bytes');
     res.header('Content-Length', String(info.size));
+  }
+
+  /**
+   * Serves a video master, honouring a single HTTP byte range.
+   *
+   * Range support is what lets the browser seek instead of downloading the
+   * whole file first, and Safari refuses to play a video without it. The bytes
+   * live in a `bytea` column, not on disk, so the slice is cut inside Postgres
+   * (`getMasterFileSlice`) instead of being loaded and then cut in Node.
+   *
+   * Multi-range requests are answered with the whole file on purpose: a
+   * `multipart/byteranges` body is not worth the complexity for this endpoint.
+   */
+  private async sendVideo(
+    res: FastifyReply,
+    imageId: string,
+    info: { filetype: string; size: number },
+    rangeHeader: string | undefined,
+  ): Promise<Buffer> {
+    this.setImageResponseHeaders(res, info.filetype);
+    res.type(ThrowIfFailed(FileType2Mime(info.filetype)));
+    res.header('Accept-Ranges', 'bytes');
+
+    const range = this.parseRangeHeader(rangeHeader, info.size);
+
+    if (range.kind === 'unsatisfiable') {
+      res.status(416);
+      res.header('Content-Range', `bytes */${info.size}`);
+      res.header('Content-Length', '0');
+      // Errors are never cacheable (same invariant as the exception filter):
+      // the /i/* middleware already set a month long Cache-Control before the
+      // handler ran, so a 416 must explicitly opt out instead of being stored
+      // by a shared cache for 30 days.
+      res.header('Cache-Control', 'no-store');
+      return Buffer.alloc(0);
+    }
+
+    if (range.kind === 'partial') {
+      const slice = ThrowIfFailed(
+        await this.imagesService.getMasterFileSlice(
+          imageId,
+          range.start,
+          range.end - range.start + 1,
+        ),
+      );
+
+      res.status(206);
+      res.header(
+        'Content-Range',
+        `bytes ${range.start}-${range.end}/${slice.size}`,
+      );
+      res.header('Content-Length', String(slice.data.length));
+      return slice.data;
+    }
+
+    const file = ThrowIfFailed(await this.imagesService.getMasterFile(imageId));
+    res.header('Content-Length', String(file.data.length));
+    return file.data;
+  }
+
+  /**
+   * Parse one `Range: bytes=...` request into a single satisfiable range.
+   *
+   * Supported forms: `bytes=start-end`, `bytes=start-` and `bytes=-suffix`.
+   * Any other single range is treated as unsatisfiable (416) rather than
+   * silently ignored, so a broken client gets a clear answer; a request with
+   * several ranges is ignored and the whole file is served instead.
+   */
+  private parseRangeHeader(
+    rangeHeader: string | undefined,
+    size: number,
+  ): ByteRange {
+    if (rangeHeader === undefined) return { kind: 'none' };
+
+    const trimmed = rangeHeader.trim();
+    if (!trimmed.toLowerCase().startsWith('bytes=')) {
+      return { kind: 'unsatisfiable' };
+    }
+
+    const specs = trimmed
+      .substring('bytes='.length)
+      .split(',')
+      .map((part) => part.trim())
+      .filter((part) => part !== '');
+
+    if (specs.length > 1) return { kind: 'none' };
+    if (specs.length === 0) return { kind: 'unsatisfiable' };
+
+    const match = /^(\d*)-(\d*)$/.exec(specs[0]);
+    if (match === null) return { kind: 'unsatisfiable' };
+
+    const [, startText, endText] = match;
+    if (startText === '' && endText === '') return { kind: 'unsatisfiable' };
+    if (size <= 0) return { kind: 'unsatisfiable' };
+
+    if (startText === '') {
+      // bytes=-N: the last N bytes. A suffix longer than the file means the
+      // whole file; a suffix of zero bytes cannot be satisfied.
+      const suffixLength = Number(endText);
+      if (!Number.isFinite(suffixLength) || suffixLength <= 0) {
+        return { kind: 'unsatisfiable' };
+      }
+
+      return {
+        kind: 'partial',
+        start: Math.max(0, size - suffixLength),
+        end: size - 1,
+      };
+    }
+
+    const start = Number(startText);
+    if (!Number.isFinite(start) || start >= size) {
+      return { kind: 'unsatisfiable' };
+    }
+
+    const requestedEnd = endText === '' ? size - 1 : Number(endText);
+    if (!Number.isFinite(requestedEnd) || requestedEnd < start) {
+      return { kind: 'unsatisfiable' };
+    }
+
+    return { kind: 'partial', start, end: Math.min(requestedEnd, size - 1) };
   }
 
   /**

@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 47
+- **Total Sessions**: 51
 - **Last Active**: 2026-11-01
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1103 | Active |
+| `journal-1.md` | ~1187 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,10 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 51 | 2026-11-01 | 视频容器扩展到 11 种且不转码 | - | `master` |
+| 50 | 2026-11-01 | 视频 Range 与页面内直接播放 | - | `master` |
+| 49 | 2026-11-01 | 修复热部署后页面转圈 | - | `master` |
+| 48 | 2026-11-01 | 部署视频上传版本到本机 8080 | - | `master` |
 | 47 | 2026-11-01 | 重置本机实例管理员口令 | `86826d2` | `master` |
 | 46 | 2026-11-01 | 查本地部署端口 | `c1e4a9a` | `master` |
 | 45 | 2026-11-01 | 图床支持视频上传与直链 | `c366450` | `master` |

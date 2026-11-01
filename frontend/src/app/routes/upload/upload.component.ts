@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { FileInputValue } from '@ngx-dropzone/cdk';
 import { AutoUnsubscribe } from 'ngx-auto-unsubscribe-decorator';
 import {
+  FileType2Ext,
   FileType2Mime,
   SupportedFileTypes,
 } from 'picsur-shared/dist/dto/mimes.dto';
@@ -34,6 +35,12 @@ export class UploadComponent implements OnInit {
   /**
    * `accept` is generated from the shared whitelist: a hardcoded string in the
    * template would silently drift the moment a format is added or removed.
+   *
+   * Mime entries alone are not enough for the video containers without a
+   * registered platform mime (`video/matroska`, `video/vnd.avi`,
+   * `video/x-ms-asf`): file pickers match `accept` against the OS mime table,
+   * which often reports the vendor variant or nothing at all. Listing the
+   * extension as well keeps `mov`, `mkv`, `wmv`, ... selectable.
    */
   public acceptedMimeTypes = '';
 
@@ -50,23 +57,29 @@ export class UploadComponent implements OnInit {
   }
 
   private buildAcceptedMimeTypes(): void {
-    const mimes = new Set<string>();
+    const accepted = new Set<string>();
     for (const filetype of SupportedFileTypes) {
       const mime = FileType2Mime(filetype);
-      if (!HasFailed(mime)) mimes.add(mime);
+      if (!HasFailed(mime)) accepted.add(mime);
+
+      const ext = FileType2Ext(filetype);
+      if (!HasFailed(ext)) accepted.add(`.${ext}`);
     }
 
-    this.acceptedMimeTypes = [...mimes].join(',');
+    this.acceptedMimeTypes = [...accepted].join(',');
   }
 
   /**
-   * Client side pre-check so an unsupported container (mov, mkv, a PDF, ...)
-   * is rejected before it travels to the server.
+   * Client side pre-check so a file the shared tables do not know (a PDF, a
+   * zip, a container outside the whitelist) is rejected before it travels to
+   * the server.
    *
    * `accept` only filters the file picker: drag & drop and clipboard paste
    * bypass it, so both entry points have to validate themselves. The check goes
-   * through the shared mime/ext tables rather than `file.type.startsWith(...)`,
-   * which would happily let `video/quicktime` through to a 400 from the server.
+   * through the shared mime/ext tables rather than the browser-reported mime,
+   * because browsers use their own names for several containers
+   * (`video/x-matroska` vs the file-type `video/matroska`) and the extension
+   * fallback is what keeps those uploads working.
    */
   private isSupportedMedia(file: File): boolean {
     if (!HasFailed(ParseMime2FileType(file.type ?? ''))) return true;

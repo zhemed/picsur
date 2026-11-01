@@ -1,5 +1,5 @@
 #!/bin/bash
-# Picsur 视频 API 回归套件（A 档：只上传与直链）。
+# Picsur 视频 API 回归套件（多容器直链、单段 Range 与页面内直接播放）。
 #
 # 用法：
 #   bash support/regression-video-api.sh <base-url> <admin-password> [fixture-dir]
@@ -9,8 +9,12 @@
 #   [fixture-dir]     夹具目录，默认 $PICSUR_FIXTURES，再默认 /tmp/bugs-fx
 #
 # 覆盖：mp4/webm 上传、HEAD、带扩展名与无扩展名直链、字节一致、Content-Length、
-#       无 Accept-Ranges、meta 与列表识别、跨格式 400、mov 400（不是 500）、
-#       删除后 404 + no-store。夹具自给（缺文件时自动调用 make-video-fixtures.cjs）。
+#       Accept-Ranges、HTTP Range 206/416（单段、开放区间、后缀区间、越界、
+#       非法、多段降级为整段）、meta 与列表识别、跨格式 400、删除后 404 +
+#       no-store；以及 mov/mkv/avi/wmv/flv/ts/3gp/ogv/m4v 这 9 个新增容器的
+#       上传 201、source_filetype、直链 MIME 与字节、HEAD、Range 206、meta、
+#       列表与删除；mpg 作为「file-type 能识别但白名单不收」的 400 负例。
+#       夹具自给（缺文件时自动调用 make-video-fixtures.cjs）。
 #
 # 超限 413 需要目标实例的 PICSUR_MAX_FILE_SIZE 比较小（默认 128 MB，不适合每次
 # 回归都写一个 128 MB 文件）。在把上传上限调小的实例上跑时，用环境变量告知脚本
@@ -84,7 +88,7 @@ curl() {
 }
 
 echo "== 0. fixtures =="
-VIDEO_FIXTURES=(base.mp4 base.webm base.mov)
+VIDEO_FIXTURES=(base.mp4 base.webm base.mov base.mkv base.avi base.wmv base.flv base.ts base.3gp base.ogv base.m4v base.mpg)
 MISSING=()
 for f in "${VIDEO_FIXTURES[@]}"; do
   [ -s "${FIXTURES}/$f" ] || MISSING+=("$f")
@@ -163,7 +167,7 @@ if [ -n "$ID_MP4" ]; then
   check "HEAD /i/<id>.mp4 content-type" "$(header content-type "$WORK/h-head-ext")" "video/mp4"
   check "HEAD /i/<id>.mp4 content-length" "$(header content-length "$WORK/h-head-ext")" "$SIZE_MP4"
   check "HEAD /i/<id>.mp4 keeps month cache" "$(header cache-control "$WORK/h-head-ext")" "max-age=2592000"
-  check "HEAD /i/<id>.mp4 has no Accept-Ranges (tier A) " "$(header accept-ranges "$WORK/h-head-ext")" ""
+  check "HEAD /i/<id>.mp4 advertises Accept-Ranges: bytes" "$(header accept-ranges "$WORK/h-head-ext")" "bytes"
   check "HEAD /i/<id>.mp4 is nosniff" "$(header x-content-type-options "$WORK/h-head-ext")" "nosniff"
   check "HEAD /i/<id>.mp4 has no body" "$HBODY" "0"
 
@@ -172,19 +176,12 @@ if [ -n "$ID_MP4" ]; then
   check "GET /i/<id>.mp4 -> 200" "$GCODE" "200"
   check "GET /i/<id>.mp4 content-type" "$(header content-type "$WORK/h-get-ext")" "video/mp4"
   check "GET /i/<id>.mp4 content-length" "$(header content-length "$WORK/h-get-ext")" "$SIZE_MP4"
+  check "GET full video advertises Accept-Ranges: bytes" "$(header accept-ranges "$WORK/h-get-ext")" "bytes"
   if cmp -s "${FIXTURES}/base.mp4" "$WORK/got.mp4"; then
     ok "GET /i/<id>.mp4 bytes identical to the upload"
   else
     bad "GET /i/<id>.mp4 bytes differ from the upload"
   fi
-
-  # A Range header must not produce a 206/Content-Range in tier A: the server
-  # ignores it and answers 200 with the whole file. Asserting this keeps the
-  # "no Range support" boundary explicit.
-  RCODE=$(curl -s -D "$WORK/h-range" -o /dev/null -w '%{http_code}' \
-    -H 'Range: bytes=0-99' "$BASE/i/$ID_MP4.mp4")
-  check "GET /i/<id>.mp4 with Range -> 200 full file (no 206)" "$RCODE" "200"
-  check "GET /i/<id>.mp4 with Range has no Content-Range" "$(header content-range "$WORK/h-range")" ""
 
   echo "== 5. GET/HEAD /i/<id> (no extension fallback) =="
   NCODE=$(curl -s -D "$WORK/h-noext" -o "$WORK/got-noext.mp4" -w '%{http_code}' "$BASE/i/$ID_MP4")
@@ -199,6 +196,7 @@ if [ -n "$ID_MP4" ]; then
   check "HEAD /i/<id> video -> 200" "$NHCODE" "200"
   check "HEAD /i/<id> video content-type" "$(header content-type "$WORK/h-noext-head")" "video/mp4"
   check "HEAD /i/<id> video content-length" "$(header content-length "$WORK/h-noext-head")" "$SIZE_MP4"
+  check "HEAD /i/<id> video advertises Accept-Ranges: bytes" "$(header accept-ranges "$WORK/h-noext-head")" "bytes"
 
   echo "== 6. meta and list identify the video =="
   MCODE=$(curl -s -D "$WORK/h-meta" -o "$WORK/meta.json" -w '%{http_code}' "$BASE/i/meta/$ID_MP4")
@@ -236,14 +234,97 @@ if [ -n "$ID_WEBM" ]; then
   fi
 fi
 
+echo "== 8. additional video containers =="
+# Every accepted non-mp4/webm container goes through the same pipeline: video
+# passthrough on upload, container mime and original bytes on the direct link,
+# Range as 206, same identifiers in meta and list. The fixtures only carry a
+# valid container header, so this suite checks the HTTP contract, not playback.
+NEW_CONTAINERS=(
+  "mov|mov|base.mov|video/quicktime|video:mov"
+  "mkv|mkv|base.mkv|video/matroska|video:mkv"
+  "avi|avi|base.avi|video/vnd.avi|video:avi"
+  "wmv|wmv|base.wmv|video/x-ms-asf|video:wmv"
+  "flv|flv|base.flv|video/x-flv|video:flv"
+  "ts|ts|base.ts|video/mp2t|video:ts"
+  "3gp|3gp|base.3gp|video/3gpp|video:3gp"
+  "ogv|ogv|base.ogv|video/ogg|video:ogv"
+  "m4v|m4v|base.m4v|video/x-m4v|video:m4v"
+)
+for CONTAINER in "${NEW_CONTAINERS[@]}"; do
+  IFS='|' read -r LABEL EXT FNAME MIME IDENT <<< "$CONTAINER"
+  echo "  -- $LABEL --"
+  CCODE=$(upload "${FIXTURES}/$FNAME")
+  CID=$(json "$WORK/up.json" 'import json,sys;print(json.load(open(sys.argv[1])).get("data",{}).get("id",""))')
+  check "POST /api/image/upload $LABEL -> 201" "$CCODE" "201"
+  if [ -z "$CID" ]; then
+    bad "upload $LABEL did not return an id: $(head -c 200 "$WORK/up.json")"
+    continue
+  fi
+  check "upload $LABEL source_filetype is $IDENT" \
+    "$(json "$WORK/up.json" 'import json,sys;print(json.load(open(sys.argv[1])).get("data",{}).get("source_filetype",""))')" \
+    "$IDENT"
+
+  CSIZE=$(stat -c %s "${FIXTURES}/$FNAME")
+  CGCODE=$(curl -s -D "$WORK/h-new-get" -o "$WORK/got-new.$EXT" -w '%{http_code}' "$BASE/i/$CID.$EXT")
+  check "GET /i/<id>.$EXT ($LABEL) -> 200" "$CGCODE" "200"
+  check "GET $LABEL content-type" "$(header content-type "$WORK/h-new-get")" "$MIME"
+  check "GET $LABEL content-length" "$(header content-length "$WORK/h-new-get")" "$CSIZE"
+  if cmp -s "${FIXTURES}/$FNAME" "$WORK/got-new.$EXT"; then
+    ok "GET $LABEL bytes identical to the upload"
+  else
+    bad "GET $LABEL bytes differ from the upload"
+  fi
+
+  CHCODE=$(curl -s -D "$WORK/h-new-head" -o /dev/null -w '%{http_code}' -I "$BASE/i/$CID.$EXT")
+  check "HEAD /i/<id>.$EXT ($LABEL) -> 200" "$CHCODE" "200"
+  check "HEAD $LABEL content-length" "$(header content-length "$WORK/h-new-head")" "$CSIZE"
+  check "HEAD $LABEL advertises Accept-Ranges: bytes" "$(header accept-ranges "$WORK/h-new-head")" "bytes"
+
+  CRCODE=$(curl -s -D "$WORK/h-new-range" -o "$WORK/range-new.bin" -w '%{http_code}' \
+    -H 'Range: bytes=0-99' "$BASE/i/$CID.$EXT")
+  check "Range $LABEL bytes=0-99 -> 206" "$CRCODE" "206"
+  check "Range $LABEL Content-Range" "$(header content-range "$WORK/h-new-range")" "bytes 0-99/$CSIZE"
+  head -c 100 "${FIXTURES}/$FNAME" > "$WORK/range-new.expect"
+  if cmp -s "$WORK/range-new.expect" "$WORK/range-new.bin"; then
+    ok "Range $LABEL slice identical to the first 100 bytes"
+  else
+    bad "Range $LABEL slice differs from the first 100 bytes"
+  fi
+
+  CMMCODE=$(curl -s -o "$WORK/meta-new.json" -w '%{http_code}' "$BASE/i/meta/$CID")
+  check "GET /i/meta/<id> ($LABEL) -> 200" "$CMMCODE" "200"
+  check "meta $LABEL source_filetype" \
+    "$(json "$WORK/meta-new.json" 'import json,sys;print(json.load(open(sys.argv[1]))["data"]["image"]["source_filetype"])')" \
+    "$IDENT"
+  check "GET /i/<id>.mp4 ($LABEL cross-container) -> 400" \
+    "$(curl -s -o /dev/null -w '%{http_code}' "$BASE/i/$CID.mp4")" "400"
+
+  CLCODE=$(curl -s -o "$WORK/list-new.json" -w '%{http_code}' -X POST "$BASE/api/image/list" \
+    -H "$AUTH" -H 'Content-Type: application/json' -d '{"count":24,"page":0}')
+  check "POST /api/image/list ($LABEL) -> 201" "$CLCODE" "201"
+  CLISTED=$(json "$WORK/list-new.json" '
+import json, sys
+rows = json.load(open(sys.argv[1]))["data"]["results"]
+row = [r for r in rows if r["id"] == sys.argv[2]]
+print(row[0]["source_filetype"] if row else "missing")
+' "$CID")
+  check "list row $LABEL source_filetype is $IDENT" "$CLISTED" "$IDENT"
+
+  CDELCODE=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/image/delete" \
+    -H "$AUTH" -H 'Content-Type: application/json' -d "{\"ids\":[\"$CID\"]}")
+  check "POST /api/image/delete ($LABEL) -> 201" "$CDELCODE" "201"
+  check "deleted GET /i/<id>.$EXT ($LABEL) -> 404" \
+    "$(curl -s -o /dev/null -w '%{http_code}' "$BASE/i/$CID.$EXT")" "404"
+done
+
 if [ -n "$ID_MP4" ]; then
-  echo "== 8. cross-media conversions are 400 =="
+  echo "== 9. cross-media conversions are 400 =="
   check "GET /i/<video id>.webp -> 400" "$(curl -s -o /dev/null -w '%{http_code}' "$BASE/i/$ID_MP4.webp")" "400"
   check "GET /i/<video id>.jpg -> 400" "$(curl -s -o /dev/null -w '%{http_code}' "$BASE/i/$ID_MP4.jpg")" "400"
   check "HEAD /i/<video id>.webm (mismatch) -> 400" "$(curl -s -o /dev/null -w '%{http_code}' -I "$BASE/i/$ID_MP4.webm")" "400"
   check "HEAD /i/<video id>.webp (image ext) -> 400" "$(curl -s -o /dev/null -w '%{http_code}' -I "$BASE/i/$ID_MP4.webp")" "400"
   # Edit parameters are ignored for videos instead of being refused: the whole
-  # file is still served (tier A has no editor for video).
+  # file is still served (there is no video editor in this tier).
   EC=$(curl -s -o "$WORK/got-edit.mp4" -w '%{http_code}' "$BASE/i/$ID_MP4.mp4?width=100")
   check "GET /i/<video id>.mp4?width=100 -> 200 full file" "$EC" "200"
   if cmp -s "${FIXTURES}/base.mp4" "$WORK/got-edit.mp4"; then
@@ -253,24 +334,139 @@ if [ -n "$ID_MP4" ]; then
   fi
 fi
 
-echo "== 9. recognised but unsupported container -> 400, not 500 =="
-MOVCODE=$(upload "${FIXTURES}/base.mov")
-check "POST /api/image/upload mov -> 400" "$MOVCODE" "400"
-MOV_TYPE=$(json "$WORK/up.json" 'import json,sys;d=json.load(open(sys.argv[1]));print(d.get("success"), d.get("data",{}).get("type"))')
-check "mov rejection is usrvalidation" "$MOV_TYPE" "False usrvalidation"
+if [ -n "$ID_MP4" ]; then
+  echo "== 10. HTTP Range (206/416) =="
+  LAST=$((SIZE_MP4 - 1))
+
+  echo "  -- single range bytes=0-99 --"
+  RCODE=$(curl -s -D "$WORK/h-range" -o "$WORK/range-first.bin" -w '%{http_code}' \
+    -H 'Range: bytes=0-99' "$BASE/i/$ID_MP4.mp4")
+  check "Range bytes=0-99 -> 206" "$RCODE" "206"
+  check "Range bytes=0-99 Content-Range" "$(header content-range "$WORK/h-range")" "bytes 0-99/$SIZE_MP4"
+  check "Range bytes=0-99 Content-Length" "$(header content-length "$WORK/h-range")" "100"
+  check "Range bytes=0-99 Content-Type" "$(header content-type "$WORK/h-range")" "video/mp4"
+  check "Range bytes=0-99 Accept-Ranges" "$(header accept-ranges "$WORK/h-range")" "bytes"
+  check "Range bytes=0-99 keeps month cache" "$(header cache-control "$WORK/h-range")" "max-age=2592000"
+  head -c 100 "${FIXTURES}/base.mp4" > "$WORK/range-first.expect"
+  if cmp -s "$WORK/range-first.expect" "$WORK/range-first.bin"; then
+    ok "Range bytes=0-99 slice identical to the first 100 bytes"
+  else
+    bad "Range bytes=0-99 slice differs from the first 100 bytes"
+  fi
+
+  echo "  -- open ended range bytes=100- --"
+  RCODE=$(curl -s -D "$WORK/h-range-open" -o "$WORK/range-open.bin" -w '%{http_code}' \
+    -H 'Range: bytes=100-' "$BASE/i/$ID_MP4.mp4")
+  check "Range bytes=100- -> 206" "$RCODE" "206"
+  check "Range bytes=100- Content-Range" "$(header content-range "$WORK/h-range-open")" "bytes 100-$LAST/$SIZE_MP4"
+  check "Range bytes=100- Content-Length" "$(header content-length "$WORK/h-range-open")" "$((SIZE_MP4 - 100))"
+  tail -c +101 "${FIXTURES}/base.mp4" > "$WORK/range-open.expect"
+  if cmp -s "$WORK/range-open.expect" "$WORK/range-open.bin"; then
+    ok "Range bytes=100- slice identical to bytes 100..end"
+  else
+    bad "Range bytes=100- slice differs from bytes 100..end"
+  fi
+
+  echo "  -- suffix range bytes=-100 --"
+  RCODE=$(curl -s -D "$WORK/h-range-suffix" -o "$WORK/range-suffix.bin" -w '%{http_code}' \
+    -H 'Range: bytes=-100' "$BASE/i/$ID_MP4.mp4")
+  check "Range bytes=-100 -> 206" "$RCODE" "206"
+  check "Range bytes=-100 Content-Range" "$(header content-range "$WORK/h-range-suffix")" "bytes $((SIZE_MP4 - 100))-$LAST/$SIZE_MP4"
+  check "Range bytes=-100 Content-Length" "$(header content-length "$WORK/h-range-suffix")" "100"
+  tail -c 100 "${FIXTURES}/base.mp4" > "$WORK/range-suffix.expect"
+  if cmp -s "$WORK/range-suffix.expect" "$WORK/range-suffix.bin"; then
+    ok "Range bytes=-100 slice identical to the last 100 bytes"
+  else
+    bad "Range bytes=-100 slice differs from the last 100 bytes"
+  fi
+
+  echo "  -- end past EOF is clamped --"
+  RCODE=$(curl -s -D "$WORK/h-range-clamp" -o "$WORK/range-clamp.bin" -w '%{http_code}' \
+    -H "Range: bytes=0-$((SIZE_MP4 + 999))" "$BASE/i/$ID_MP4.mp4")
+  check "Range end past EOF -> 206 clamped" "$RCODE" "206"
+  check "Range end past EOF Content-Range" "$(header content-range "$WORK/h-range-clamp")" "bytes 0-$LAST/$SIZE_MP4"
+  check "Range end past EOF Content-Length" "$(header content-length "$WORK/h-range-clamp")" "$SIZE_MP4"
+  if cmp -s "${FIXTURES}/base.mp4" "$WORK/range-clamp.bin"; then
+    ok "Range end past EOF returns the whole file"
+  else
+    bad "Range end past EOF returned different bytes"
+  fi
+
+  echo "  -- no-extension direct link honours Range --"
+  RCODE=$(curl -s -D "$WORK/h-range-noext" -o "$WORK/range-noext.bin" -w '%{http_code}' \
+    -H 'Range: bytes=0-99' "$BASE/i/$ID_MP4")
+  check "Range on /i/<id> (no ext) -> 206" "$RCODE" "206"
+  check "Range on /i/<id> (no ext) Content-Range" "$(header content-range "$WORK/h-range-noext")" "bytes 0-99/$SIZE_MP4"
+  head -c 100 "${FIXTURES}/base.mp4" > "$WORK/range-noext.expect"
+  if cmp -s "$WORK/range-noext.expect" "$WORK/range-noext.bin"; then
+    ok "Range on /i/<id> (no ext) slice identical"
+  else
+    bad "Range on /i/<id> (no ext) slice differs"
+  fi
+
+  echo "  -- unsatisfiable and malformed ranges --"
+  RCODE=$(curl -s -D "$WORK/h-range-oob" -o "$WORK/range-oob.bin" -w '%{http_code}' \
+    -H "Range: bytes=$SIZE_MP4-$((SIZE_MP4 + 10))" "$BASE/i/$ID_MP4.mp4")
+  check "Range start at EOF -> 416" "$RCODE" "416"
+  check "416 Content-Range" "$(header content-range "$WORK/h-range-oob")" "bytes */$SIZE_MP4"
+  check "416 has an empty body" "$(stat -c %s "$WORK/range-oob.bin")" "0"
+  RCODE=$(curl -s -D "$WORK/h-range-bad" -o /dev/null -w '%{http_code}' \
+    -H 'Range: bytes=abc' "$BASE/i/$ID_MP4.mp4")
+  check "Malformed Range -> 416" "$RCODE" "416"
+  check "Malformed Range Content-Range" "$(header content-range "$WORK/h-range-bad")" "bytes */$SIZE_MP4"
+  RCODE=$(curl -s -D "$WORK/h-range-rev" -o /dev/null -w '%{http_code}' \
+    -H 'Range: bytes=500-100' "$BASE/i/$ID_MP4.mp4")
+  check "Reversed Range -> 416" "$RCODE" "416"
+
+  echo "  -- multiple ranges fall back to the whole file --"
+  RCODE=$(curl -s -D "$WORK/h-range-multi" -o "$WORK/range-multi.bin" -w '%{http_code}' \
+    -H 'Range: bytes=0-1,5-6' "$BASE/i/$ID_MP4.mp4")
+  check "Multi-range -> 200 full file" "$RCODE" "200"
+  check "Multi-range has no Content-Range" "$(header content-range "$WORK/h-range-multi")" ""
+  if cmp -s "${FIXTURES}/base.mp4" "$WORK/range-multi.bin"; then
+    ok "Multi-range returns the whole file"
+  else
+    bad "Multi-range returned different bytes"
+  fi
+
+  if [ -n "$ID_WEBM" ]; then
+    echo "  -- webm honours Range too --"
+    RCODE=$(curl -s -D "$WORK/h-range-webm" -o "$WORK/range-webm.bin" -w '%{http_code}' \
+      -H 'Range: bytes=0-99' "$BASE/i/$ID_WEBM.webm")
+    check "webm Range bytes=0-99 -> 206" "$RCODE" "206"
+    check "webm Range Content-Range" "$(header content-range "$WORK/h-range-webm")" "bytes 0-99/$SIZE_WEBM"
+    check "webm Range Content-Type" "$(header content-type "$WORK/h-range-webm")" "video/webm"
+    head -c 100 "${FIXTURES}/base.webm" > "$WORK/range-webm.expect"
+    if cmp -s "$WORK/range-webm.expect" "$WORK/range-webm.bin"; then
+      ok "webm Range slice identical to the first 100 bytes"
+    else
+      bad "webm Range slice differs from the first 100 bytes"
+    fi
+  fi
+fi
+
+echo "== 11. recognised but not whitelisted container (mpg) -> 400, not 500 =="
+# MPEG-PS is deliberately not accepted: the same valid file can be reported as
+# video/mpeg, video/MP1S or video/MP2P depending on the pack header, so a single
+# mime mapping would be unstable. The negative case proves the rejection is a
+# clean 400 instead of a 500 or a stored-but-unservable file.
+MPGCODE=$(upload "${FIXTURES}/base.mpg")
+check "POST /api/image/upload mpg -> 400" "$MPGCODE" "400"
+MPG_TYPE=$(json "$WORK/up.json" 'import json,sys;d=json.load(open(sys.argv[1]));print(d.get("success"), d.get("data",{}).get("type"))')
+check "mpg rejection is usrvalidation" "$MPG_TYPE" "False usrvalidation"
 check "service still alive after rejection" "$(curl -s -o /dev/null -w '%{http_code}' "$BASE/api/info")" "200"
 
 if [ -n "${PICSUR_MAX_FILE_SIZE_UNDER_TEST:-}" ] && [ -s "${FIXTURES}/too-big.mp4" ]; then
-  echo "== 10. over PICSUR_MAX_FILE_SIZE -> 413 =="
+  echo "== 12. over PICSUR_MAX_FILE_SIZE -> 413 =="
   BIGCODE=$(upload "${FIXTURES}/too-big.mp4")
   check "oversized video upload -> 413" "$BIGCODE" "413"
 else
-  echo "== 10. over PICSUR_MAX_FILE_SIZE -> 413 =="
+  echo "== 12. over PICSUR_MAX_FILE_SIZE -> 413 =="
   echo "  [SKIP] set PICSUR_MAX_FILE_SIZE_UNDER_TEST=<limit> with an instance started"
   echo "         with a small PICSUR_MAX_FILE_SIZE to cover this assertion"
 fi
 
-echo "== 11. deletion semantics =="
+echo "== 13. deletion semantics =="
 IDS="[]"
 [ -n "$ID_MP4" ] && IDS=$(printf '["%s"]' "$ID_MP4")
 if [ -n "$ID_WEBM" ]; then
