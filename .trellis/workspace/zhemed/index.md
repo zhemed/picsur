@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 46
+- **Total Sessions**: 47
 - **Last Active**: 2026-11-01
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1080 | Active |
+| `journal-1.md` | ~1103 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 47 | 2026-11-01 | 重置本机实例管理员口令 | `86826d2` | `master` |
 | 46 | 2026-11-01 | 查本地部署端口 | `c1e4a9a` | `master` |
 | 45 | 2026-11-01 | 图床支持视频上传与直链 | `c366450` | `master` |
 | 44 | 2026-10-31 | 规划 Picsur 全栈迁移到 Rust | `35a85f2` | `master` |

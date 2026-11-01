@@ -1078,3 +1078,26 @@ zh-default 只改前端：picsur-img 增加 native 模式（原生 <img loading=
 ### Status
 
 [OK] **Completed**
+
+
+## Session 47: 重置本机实例管理员口令
+<!-- trellis-session: v=2 fp=a02e703716226202 -->
+
+**Date**: 2026-11-01
+**Task**: 重置本机实例管理员口令
+**Package**: picsur-shared
+**Branch**: `master`
+
+### Summary
+
+按用户授权重置本机 8080 Docker 实例的 admin 口令：容器内 bcrypt-ts 生成哈希后单行 UPDATE，登录 201 加 token 验证通过、错误口令 401、/api/info 200、容器未重启；/data/allinone.env 同步并备份；仓库零改动，口令与哈希未落盘。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `86826d2` | chore(task): record the admin password reset [task:11-01-reset-admin-password] |
+
+### Status
+
+[OK] **Completed**
